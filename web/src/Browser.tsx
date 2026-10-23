@@ -224,6 +224,7 @@ type EntryActions = {
   contextTarget: (entry: Entry) => void
   setColor: (entry: Entry, color: ColorId | null) => void
   isSelected: (entry: Entry) => boolean
+  isCut: (entry: Entry) => boolean
   childCount: (path: string) => ChildCount | null | undefined
   selectBox: (paths: string[]) => void
   selectedPaths: () => string[]
@@ -984,6 +985,8 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
         })
     },
     isSelected: (entry) => selection.has(entry.path),
+    isCut: (entry) =>
+      clipboard?.mode === 'cut' && clipboard.entries.some((e) => e.path === entry.path),
     selectBox,
     selectedPaths: () => [...selection],
     isShared: (entry) => sharedPaths.has(entry.path),
@@ -2309,6 +2312,9 @@ type ListProps = {
 // One grid template shared by the column header and every row so they line up.
 const listGrid = 'grid grid-cols-[1.5rem_1fr_6rem_9rem_5rem] items-center gap-3'
 
+const CUT_CLASSES =
+  'opacity-60 outline-dashed outline-1 -outline-offset-1 outline-muted-foreground/70'
+
 /** locationLabel names the folder an entry lives in, for search results. */
 function locationLabel(path: string): string {
   const parent = parentOf(path)
@@ -2501,6 +2507,7 @@ function ListRow({
   const selected = actions.isSelected(entry)
   const shared = actions.isShared(entry)
   const linked = entry.ref != null
+  const cut = actions.isCut(entry)
   const { isTarget, ...drag } = moveDragProps(entry, actions, 'row')
   return (
     <EntryMenu entry={entry} actions={actions}>
@@ -2509,7 +2516,9 @@ function ListRow({
         tabIndex={focused ? 0 : -1}
         aria-selected={selected}
         data-entry-path={entry.path}
-        className={`group ${listGrid} h-12 cursor-default border-b border-border/60 px-4 outline-none select-none focus:ring-2 focus:ring-inset focus:ring-primary ${
+        className={`group ${listGrid} h-12 cursor-default border-b border-border/60 px-4 select-none focus:ring-2 focus:ring-inset focus:ring-primary ${
+          cut ? CUT_CLASSES : 'outline-none'
+        } ${
           isTarget
             ? 'bg-primary/15 ring-2 ring-inset ring-primary'
             : selected
@@ -2743,6 +2752,7 @@ function GridTile({
   const selected = actions.isSelected(entry)
   const shared = actions.isShared(entry)
   const linked = entry.ref != null
+  const cut = actions.isCut(entry)
   const { isTarget, ...drag } = moveDragProps(entry, actions)
   return (
     <EntryMenu entry={entry} actions={actions}>
@@ -2751,7 +2761,9 @@ function GridTile({
         tabIndex={focused ? 0 : -1}
         aria-selected={selected}
         data-entry-path={entry.path}
-        className={`flex cursor-default flex-col gap-2 rounded-lg border p-2 text-center outline-none select-none focus:ring-2 focus:ring-primary ${
+        className={`flex cursor-default flex-col gap-2 rounded-lg border p-2 text-center select-none focus:ring-2 focus:ring-primary ${
+          cut ? CUT_CLASSES : 'outline-none'
+        } ${
           isTarget
             ? 'border-primary bg-primary/15 ring-2 ring-primary'
             : selected
