@@ -216,7 +216,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	authService := auth.New(database)
+	passkeys, err := auth.NewPasskeys(cfg.AppURL.Hostname(), cfg.Origin())
+	if err != nil {
+		slog.Warn("passkeys are unavailable on this instance", "reason", err)
+	}
+	authService := auth.New(database, auth.WithPasskeys(passkeys))
 	if err := announceSetup(context.Background(), authService, cfg); err != nil {
 		return err
 	}

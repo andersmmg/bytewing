@@ -53,6 +53,20 @@ If you lose your authenticator, a [recovery code](#forgotten-passwords) works in
 place of the code at sign-in, so a lost device is a recovery rather than a
 lockout. Two-factor is per-user and opt-in.
 
+## Passkeys
+
+An account can also hold **passkeys** (WebAuthn): a device-bound credential that
+signs you in with a biometric or a PIN instead of the password. Register one
+under **Settings → Passkeys** -- it asks for the password again (and the TOTP
+code, when two-factor is on), then for the authenticator itself. Sign in from
+**Use a passkey** on the signin screen: nothing is typed, so there is no
+password to phish.
+
+A passkey is a second way in, not a replacement: the password keeps working, and
+two-factor still applies wherever it applies. Only the account owner manages
+their passkeys, and management always requires the password -- a passkey can be
+added, or removed, without one.
+
 ## Forgotten passwords
 
 Zefile never sends email, so password reset works with **recovery codes**

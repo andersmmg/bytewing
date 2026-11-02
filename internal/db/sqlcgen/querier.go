@@ -22,6 +22,9 @@ type Querier interface {
 	// Backs first-run detection: an instance with no account shows the setup link
 	// rather than a sign-in form.
 	CountUsers(ctx context.Context) (int64, error)
+	// Whether the instance has any passkey at all, so the sign-in screen can offer
+	// one only when signing in with it can work.
+	CountWebAuthnCredentials(ctx context.Context) (int64, error)
 	CreateAPIToken(ctx context.Context, arg CreateAPITokenParams) (ApiToken, error)
 	CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error)
 	CreateInvitation(ctx context.Context, arg CreateInvitationParams) (Invitation, error)
@@ -34,6 +37,7 @@ type Querier interface {
 	CreateTrash(ctx context.Context, arg CreateTrashParams) (Trash, error)
 	CreateUpload(ctx context.Context, arg CreateUploadParams) (Upload, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateWebAuthnCredential(ctx context.Context, arg CreateWebAuthnCredentialParams) (WebauthnCredential, error)
 	DeleteACL(ctx context.Context, id int64) error
 	DeleteACLForSubject(ctx context.Context, arg DeleteACLForSubjectParams) error
 	// Retention purge: drop entries older than a cutoff. The audit log records IP
@@ -66,6 +70,9 @@ type Querier interface {
 	// subject type as well as an id, so they carry no foreign key and are cleared
 	// separately by the caller.
 	DeleteUser(ctx context.Context, id int64) error
+	// Scoped to the owner so one account cannot revoke another's passkey by
+	// guessing an id. execrows lets the handler answer 404 when nothing matched.
+	DeleteWebAuthnCredentialForUser(ctx context.Context, arg DeleteWebAuthnCredentialForUserParams) (int64, error)
 	FinishJob(ctx context.Context, arg FinishJobParams) error
 	// The lookup performed on every request that arrives with a zefile_live_ token.
 	// Expiry and revocation are filtered here, alongside the account being enabled,
@@ -101,6 +108,9 @@ type Querier interface {
 	GetUpload(ctx context.Context, arg GetUploadParams) (Upload, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	// The login lookup: an assertion carries the credential id and nothing else
+	// until it has been verified.
+	GetWebAuthnCredentialByCredentialID(ctx context.Context, credentialID []byte) (WebauthnCredential, error)
 	GroupExists(ctx context.Context, id int64) (int64, error)
 	IncrementShareDownloads(ctx context.Context, id int64) error
 	InsertAuditEntry(ctx context.Context, arg InsertAuditEntryParams) error
@@ -138,6 +148,9 @@ type Querier interface {
 	// A reset tries the presented code against each unused code for the account.
 	ListUnusedRecoveryCodesForUser(ctx context.Context, userID int64) ([]ListUnusedRecoveryCodesForUserRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	// The management list in Settings. The stored credential is never sent to the
+	// client.
+	ListWebAuthnCredentialsForUser(ctx context.Context, userID int64) ([]WebauthnCredential, error)
 	LogShareAccess(ctx context.Context, arg LogShareAccessParams) error
 	MarkInvitationUsed(ctx context.Context, arg MarkInvitationUsedParams) error
 	// Return a running job to a paused state: it leaves the worker but keeps its
@@ -208,6 +221,11 @@ type Querier interface {
 	UpdateReferencesTargetSubtree(ctx context.Context, arg UpdateReferencesTargetSubtreeParams) error
 	UpdateUploadOffset(ctx context.Context, arg UpdateUploadOffsetParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	// Records a successful assertion: the credential as the verification left it
+	// (its signature counter is what detects a cloned authenticator) and the use
+	// time for the Settings list. Best-effort, like the session touch: a lost
+	// timestamp must never fail an otherwise-valid sign-in.
+	UpdateWebAuthnCredentialUse(ctx context.Context, arg UpdateWebAuthnCredentialUseParams) error
 	UpsertACL(ctx context.Context, arg UpsertACLParams) (Acl, error)
 	UpsertChecksum(ctx context.Context, arg UpsertChecksumParams) error
 	UpsertFileMeta(ctx context.Context, arg UpsertFileMetaParams) error

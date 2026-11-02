@@ -95,7 +95,7 @@ ships a compose file that builds the image locally:
 docker compose -f deploy/docker-compose.build.yml up -d
 ```
 
-Or build the binary directly (requires Go 1.25 and pnpm):
+Or build the binary directly (requires Go 1.27 and pnpm):
 
 ```sh
 make dist   # builds the web UI and embeds it, then compiles the binary

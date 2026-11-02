@@ -69,6 +69,9 @@ codebase except the lessons it documented.
   their own password and sessions — shown by device and **location**, never a raw IP.
 - **Two-factor authentication** (TOTP) and single-use **recovery codes** to reset a
   forgotten password — no email anywhere.
+- **Passkeys** (WebAuthn) alongside the password: register one in settings, then
+  sign in with a biometric or PIN instead of typing anything. The password keeps
+  working, and two-factor still applies where it applies.
 - An **audit log** records every sensitive action; how long it, and the trash, are
   kept is configurable.
 
@@ -98,7 +101,7 @@ Zefile aims to be the File Browser that should have existed, not a Nextcloud alt
 
 ## Stack
 
-Go 1.25 · SQLite ([`modernc.org/sqlite`](https://pkg.go.dev/modernc.org/sqlite), pure Go) ·
+Go 1.27 · SQLite ([`modernc.org/sqlite`](https://pkg.go.dev/modernc.org/sqlite), pure Go) ·
 React 19 + Vite · [shadcn/ui](https://ui.shadcn.com/) (Radix + Tailwind CSS 4) ·
 [Phosphor Icons](https://phosphoricons.com/)
 
@@ -133,9 +136,9 @@ being useful.
 
 Two things decide whether a deployment works:
 
-| | |
-| --- | --- |
-| `ZEFILE_CONFIG_DIR` | Must not sit inside `ZEFILE_DATA_DIR`. Zefile refuses to start otherwise: a database users can list is one they can download, password hashes included. |
+|                      |                                                                                                                                                                                                                                                                                                                                    |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ZEFILE_CONFIG_DIR`  | Must not sit inside `ZEFILE_DATA_DIR`. Zefile refuses to start otherwise: a database users can list is one they can download, password hashes included.                                                                                                                                                                            |
 | `ZEFILE_CONTENT_URL` | A second hostname. Without it, user content is served from the application origin and Zefile hardens itself — every file becomes an attachment and nothing renders in place. On the object-storage backend this degradation does not apply: downloads are presigned redirects to the store's own origin, so previews keep working. |
 
 There are **no `PUID`/`PGID` to set**. Zefile adopts whoever owns the data
@@ -150,7 +153,7 @@ make dist    # build the interface and a binary embedding it
 make check   # what CI runs: fmt, vet, test, govulncheck
 ```
 
-Requires Go 1.25+, and Node with pnpm for the interface. The version is read from
+Requires Go 1.27+, and Node with pnpm for the interface. The version is read from
 [`version.txt`](version.txt), the single source of truth kept by release-please, so
 a local build reports the same version as a release. See `make help` for targets.
 

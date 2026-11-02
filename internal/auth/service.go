@@ -222,6 +222,9 @@ type Service struct {
 
 	byAddress *Limiter
 	byAccount *Limiter
+
+	passkeys   *Passkeys
+	ceremonies *ceremonyStore
 }
 
 // Option adjusts a [Service].
@@ -252,6 +255,7 @@ func New(database *db.DB, opts ...Option) *Service {
 		sessionTTL: DefaultSessionTTL,
 		setupTTL:   DefaultSetupTTL,
 		now:        time.Now,
+		ceremonies: newCeremonyStore(),
 	}
 	for _, opt := range opts {
 		opt(s)

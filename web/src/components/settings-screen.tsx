@@ -1,39 +1,77 @@
-import { useCallback, useEffect, useState, type SubmitEvent, type ReactNode } from 'react'
-import { toast } from 'sonner'
-import { CheckIcon, CircleNotchIcon, DeviceMobileIcon, MonitorIcon } from '@phosphor-icons/react'
-import { toDataURL } from 'qrcode'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type SubmitEvent,
+  type ReactNode,
+} from "react";
+import { toast } from "sonner";
+import {
+  CheckIcon,
+  CircleNotchIcon,
+  DeviceMobileIcon,
+  FingerprintIcon,
+  MonitorIcon,
+} from "@phosphor-icons/react";
+import { toDataURL } from "qrcode";
 
-import { api, ApiError, formatSize, type SessionInfo, type Space, type User } from '@/api'
-import { formatRelativeTime } from '@/lib/files'
-import { applyPalette, currentPaletteId, PALETTES, type Palette } from '@/lib/palette'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { TokensSection } from '@/components/tokens-section'
+import {
+  api,
+  ApiError,
+  formatSize,
+  type Passkey,
+  type SessionInfo,
+  type Space,
+  type User,
+} from "@/api";
+import { formatRelativeTime } from "@/lib/files";
+import {
+  credentialToJSON,
+  promptDismissed,
+  toCreationOptions,
+} from "@/lib/webauthn";
+import {
+  applyPalette,
+  currentPaletteId,
+  PALETTES,
+  type Palette,
+} from "@/lib/palette";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { TokensSection } from "@/components/tokens-section";
 
 /** deviceLabel turns a user-agent into a short, human name. It is best-effort:
  *  a hint about which session is which, not a precise fingerprint. */
 function deviceLabel(ua?: string): string {
-  if (!ua) return 'Unknown device'
-  const browser =
-    /Edg\//.test(ua) ? 'Edge'
-    : /OPR\/|Opera/.test(ua) ? 'Opera'
-    : /Firefox\//.test(ua) ? 'Firefox'
-    : /Chrome\//.test(ua) ? 'Chrome'
-    : /Safari\//.test(ua) ? 'Safari'
-    : 'Browser'
-  const os =
-    /iPhone|iPad|iOS/.test(ua) ? 'iOS'
-    : /Android/.test(ua) ? 'Android'
-    : /Mac OS X|Macintosh/.test(ua) ? 'macOS'
-    : /Windows/.test(ua) ? 'Windows'
-    : /Linux/.test(ua) ? 'Linux'
-    : ''
-  return os ? `${browser} on ${os}` : browser
+  if (!ua) return "Unknown device";
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /OPR\/|Opera/.test(ua)
+      ? "Opera"
+      : /Firefox\//.test(ua)
+        ? "Firefox"
+        : /Chrome\//.test(ua)
+          ? "Chrome"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : "Browser";
+  const os = /iPhone|iPad|iOS/.test(ua)
+    ? "iOS"
+    : /Android/.test(ua)
+      ? "Android"
+      : /Mac OS X|Macintosh/.test(ua)
+        ? "macOS"
+        : /Windows/.test(ua)
+          ? "Windows"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : "";
+  return os ? `${browser} on ${os}` : browser;
 }
 
 function isMobile(ua?: string): boolean {
-  return !!ua && /iPhone|Android|Mobile/.test(ua)
+  return !!ua && /iPhone|Android|Mobile/.test(ua);
 }
 
 /**
@@ -41,11 +79,19 @@ function isMobile(ua?: string): boolean {
  * the sessions signed in to it. Everything here is scoped to the caller — there
  * is no way to reach another account from it.
  */
-export function SettingsScreen({ me, onSignedOut }: { me: User; onSignedOut: () => void }) {
+export function SettingsScreen({
+  me,
+  onSignedOut,
+}: {
+  me: User;
+  onSignedOut: () => void;
+}) {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-        <h1 className="font-serif text-xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="font-serif text-xl font-semibold tracking-tight">
+          Settings
+        </h1>
       </header>
 
       <div className="min-h-0 flex-1 overflow-auto">
@@ -59,7 +105,7 @@ export function SettingsScreen({ me, onSignedOut }: { me: User; onSignedOut: () 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">{me.username}</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {me.is_admin ? 'Administrator' : 'Member'}
+                  {me.is_admin ? "Administrator" : "Member"}
                 </p>
               </div>
             </div>
@@ -68,6 +114,7 @@ export function SettingsScreen({ me, onSignedOut }: { me: User; onSignedOut: () 
           <AppearanceSection />
           <PasswordSection />
           <TwoFactorSection initiallyEnabled={!!me.totp_enabled} />
+          <PasskeysSection />
           <RecoveryCodesSection />
           <TokensSection />
           {me.is_admin && <StorageSection />}
@@ -76,26 +123,26 @@ export function SettingsScreen({ me, onSignedOut }: { me: User; onSignedOut: () 
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /**
  * account colour theme picker, maybe eventually custom hue as well?
  */
 function AppearanceSection() {
-  const [current, setCurrent] = useState(currentPaletteId())
+  const [current, setCurrent] = useState(currentPaletteId());
 
   async function choose(palette: Palette) {
-    if (palette.id === current) return
-    const previous = current
-    applyPalette(palette.id)
-    setCurrent(palette.id)
+    if (palette.id === current) return;
+    const previous = current;
+    applyPalette(palette.id);
+    setCurrent(palette.id);
     try {
-      await api.setTheme(palette.id)
+      await api.setTheme(palette.id);
     } catch {
-      applyPalette(previous)
-      setCurrent(previous)
-      toast.error('Could not save your colour theme. Please try again.')
+      applyPalette(previous);
+      setCurrent(previous);
+      toast.error("Could not save your colour theme. Please try again.");
     }
   }
 
@@ -108,7 +155,7 @@ function AppearanceSection() {
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {PALETTES.map((palette) => {
-            const selected = palette.id === current
+            const selected = palette.id === current;
             return (
               <button
                 key={palette.id}
@@ -117,7 +164,9 @@ function AppearanceSection() {
                 aria-pressed={selected}
                 title={palette.label}
                 className={`flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-sm transition-colors ${
-                  selected ? 'border-primary ring-1 ring-primary' : 'border-border hover:bg-accent'
+                  selected
+                    ? "border-primary ring-1 ring-primary"
+                    : "border-border hover:bg-accent"
                 }`}
               >
                 <span
@@ -125,80 +174,98 @@ function AppearanceSection() {
                   style={{ backgroundColor: palette.seed }}
                   aria-hidden
                 >
-                  {selected && <CheckIcon className="size-3 text-black/60" weight="bold" />}
+                  {selected && (
+                    <CheckIcon className="size-3 text-black/60" weight="bold" />
+                  )}
                 </span>
                 {palette.label}
               </button>
-            )
+            );
           })}
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 /** SectionLabel is the small uppercase header each settings section carries, with
  *  an optional action on the right — the same language as the Members screen. */
-function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
+function SectionLabel({
+  children,
+  action,
+}: {
+  children: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <div className="mb-2 flex min-h-8 items-center justify-between gap-3 px-1">
       <h2 className="text-base font-semibold text-foreground">{children}</h2>
       {action}
     </div>
-  )
+  );
 }
 
-type FieldErrors = Partial<Record<'current_password' | 'password' | 'confirm', string>>
+type FieldErrors = Partial<
+  Record<"current_password" | "password" | "confirm", string>
+>;
 
 function TwoFactorSection({ initiallyEnabled }: { initiallyEnabled: boolean }) {
-  const [enabled, setEnabled] = useState(initiallyEnabled)
-  const [enroll, setEnroll] = useState<{ secret: string; qr: string } | null>(null)
-  const [disabling, setDisabling] = useState(false)
-  const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [enabled, setEnabled] = useState(initiallyEnabled);
+  const [enroll, setEnroll] = useState<{ secret: string; qr: string } | null>(
+    null,
+  );
+  const [disabling, setDisabling] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function begin() {
-    setBusy(true)
+    setBusy(true);
     try {
-      const { secret, uri } = await api.enrollTOTP()
-      const qr = await toDataURL(uri, { margin: 1, width: 200 })
-      setEnroll({ secret, qr })
-      setCode('')
+      const { secret, uri } = await api.enrollTOTP();
+      const qr = await toDataURL(uri, { margin: 1, width: 200 });
+      setEnroll({ secret, qr });
+      setCode("");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not start setup.')
+      toast.error(
+        err instanceof ApiError ? err.message : "Could not start setup.",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
   async function confirmEnable() {
-    if (!enroll) return
-    setBusy(true)
+    if (!enroll) return;
+    setBusy(true);
     try {
-      await api.enableTOTP(enroll.secret, code.trim())
-      setEnabled(true)
-      setEnroll(null)
-      setCode('')
-      toast.success('Two-factor authentication enabled')
+      await api.enableTOTP(enroll.secret, code.trim());
+      setEnabled(true);
+      setEnroll(null);
+      setCode("");
+      toast.success("Two-factor authentication enabled");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not enable two-factor.')
+      toast.error(
+        err instanceof ApiError ? err.message : "Could not enable two-factor.",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
   async function confirmDisable() {
-    setBusy(true)
+    setBusy(true);
     try {
-      await api.disableTOTP(code.trim())
-      setEnabled(false)
-      setDisabling(false)
-      setCode('')
-      toast.success('Two-factor authentication disabled')
+      await api.disableTOTP(code.trim());
+      setEnabled(false);
+      setDisabling(false);
+      setCode("");
+      toast.success("Two-factor authentication disabled");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not disable two-factor.')
+      toast.error(
+        err instanceof ApiError ? err.message : "Could not disable two-factor.",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
@@ -206,16 +273,24 @@ function TwoFactorSection({ initiallyEnabled }: { initiallyEnabled: boolean }) {
     <section className="space-y-3">
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Two-factor authentication</h2>
+          <h2 className="text-base font-semibold text-foreground">
+            Two-factor authentication
+          </h2>
           <p className="text-sm text-muted-foreground">
             {enabled
-              ? 'Enabled. An authenticator code is required at sign-in.'
-              : 'Require a code from an authenticator app on top of your password.'}
+              ? "Enabled. An authenticator code is required at sign-in."
+              : "Require a code from an authenticator app on top of your password."}
           </p>
         </div>
         {!enabled && !enroll && (
-          <Button variant="outline" size="sm" className="ml-auto shrink-0" onClick={begin} disabled={busy}>
-            {busy ? 'Starting…' : 'Enable'}
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto shrink-0"
+            onClick={begin}
+            disabled={busy}
+          >
+            {busy ? "Starting…" : "Enable"}
           </Button>
         )}
         {enabled && !disabling && (
@@ -224,8 +299,8 @@ function TwoFactorSection({ initiallyEnabled }: { initiallyEnabled: boolean }) {
             size="sm"
             className="ml-auto shrink-0"
             onClick={() => {
-              setDisabling(true)
-              setCode('')
+              setDisabling(true);
+              setCode("");
             }}
           >
             Disable
@@ -236,10 +311,19 @@ function TwoFactorSection({ initiallyEnabled }: { initiallyEnabled: boolean }) {
       {enroll && (
         <div className="space-y-3 rounded-md border p-3">
           <p className="text-xs text-muted-foreground">
-            Scan this in your authenticator app (or enter the key by hand), then type the code it shows.
+            Scan this in your authenticator app (or enter the key by hand), then
+            type the code it shows.
           </p>
-          <img src={enroll.qr} alt="" width={180} height={180} className="rounded bg-white p-2" />
-          <p className="break-all font-mono text-xs text-muted-foreground">{enroll.secret}</p>
+          <img
+            src={enroll.qr}
+            alt=""
+            width={180}
+            height={180}
+            className="rounded bg-white p-2"
+          />
+          <p className="break-all font-mono text-xs text-muted-foreground">
+            {enroll.secret}
+          </p>
           <div className="flex items-center gap-2">
             <Input
               inputMode="numeric"
@@ -250,7 +334,7 @@ function TwoFactorSection({ initiallyEnabled }: { initiallyEnabled: boolean }) {
               className="max-w-40"
             />
             <Button size="sm" onClick={confirmEnable} disabled={busy}>
-              {busy ? 'Confirming…' : 'Confirm'}
+              {busy ? "Confirming…" : "Confirm"}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEnroll(null)}>
               Cancel
@@ -275,7 +359,7 @@ function TwoFactorSection({ initiallyEnabled }: { initiallyEnabled: boolean }) {
             onClick={confirmDisable}
             disabled={busy}
           >
-            {busy ? 'Disabling…' : 'Turn off'}
+            {busy ? "Disabling…" : "Turn off"}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setDisabling(false)}>
             Cancel
@@ -283,32 +367,250 @@ function TwoFactorSection({ initiallyEnabled }: { initiallyEnabled: boolean }) {
         </div>
       )}
     </section>
-  )
+  );
+}
+
+function PasskeysSection() {
+  const [passkeys, setPasskeys] = useState<Passkey[] | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [removing, setRemoving] = useState<number | null>(null);
+  const [removePassword, setRemovePassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const supported =
+    typeof window !== "undefined" && "PublicKeyCredential" in window;
+
+  const load = useCallback(async () => {
+    try {
+      setPasskeys((await api.listPasskeys()).passkeys);
+    } catch {
+      toast.error("Could not load your passkeys.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (supported) void load();
+  }, [supported, load]);
+
+  async function add(event: SubmitEvent) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const options = await api.passkeyRegisterOptions(password);
+      const credential = (await navigator.credentials.create({
+        publicKey: toCreationOptions(options.public_key),
+      })) as PublicKeyCredential | null;
+      if (!credential) return;
+      const created = await api.passkeyRegister(
+        options.ceremony_id,
+        name.trim(),
+        credentialToJSON(credential),
+      );
+      setPasskeys((current) => [created, ...(current ?? [])]);
+      setAdding(false);
+      setPassword("");
+      setName("");
+      toast.success("Passkey added");
+    } catch (err) {
+      if (promptDismissed(err)) return;
+      toast.error(passkeyError(err, "Could not add a passkey."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(passkey: Passkey) {
+    setBusy(true);
+    try {
+      await api.removePasskey(passkey.id, removePassword);
+      setPasskeys((current) =>
+        (current ?? []).filter((p) => p.id !== passkey.id),
+      );
+      setRemoving(null);
+      setRemovePassword("");
+      toast.success(`“${passkey.name}” removed`);
+    } catch (err) {
+      toast.error(passkeyError(err, "Could not remove that passkey."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!supported) return null;
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Passkeys</h2>
+          <p className="text-sm text-muted-foreground">
+            Sign in with a fingerprint, a face or a security key instead of a
+            password.
+          </p>
+        </div>
+        {!adding && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto shrink-0"
+            onClick={() => {
+              setAdding(true);
+              setPassword("");
+              setName("");
+            }}
+          >
+            Add a passkey
+          </Button>
+        )}
+      </div>
+
+      {adding && (
+        <form
+          className="space-y-2 rounded-md border p-3"
+          onSubmit={(e) => void add(e)}
+        >
+          <p className="text-xs text-muted-foreground">
+            Confirm your password, then follow the prompt from your browser.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="password"
+              autoComplete="current-password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.currentTarget.value)}
+              className="max-w-56"
+            />
+            <Input
+              placeholder="Name, e.g. Laptop"
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              className="max-w-56"
+            />
+            <Button size="sm" type="submit" disabled={busy || !password}>
+              {busy ? "Waiting…" : "Create"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={() => setAdding(false)}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {passkeys && passkeys.length > 0 && (
+        <ul className="divide-y rounded-md border">
+          {passkeys.map((passkey) => (
+            <li
+              key={passkey.id}
+              className="flex items-center gap-3 px-3 py-2.5"
+            >
+              <FingerprintIcon className="size-5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">{passkey.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  Added {formatRelativeTime(passkey.created_at)}
+                  {passkey.last_used_at &&
+                    ` · last used ${formatRelativeTime(passkey.last_used_at)}`}
+                </p>
+              </div>
+              {removing === passkey.id ? (
+                <div className="flex shrink-0 items-center gap-2">
+                  <Input
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Password"
+                    value={removePassword}
+                    onChange={(e) => setRemovePassword(e.currentTarget.value)}
+                    className="h-8 w-36"
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    className="bg-destructive text-white hover:bg-destructive/90"
+                    onClick={() => void remove(passkey)}
+                    disabled={busy || !removePassword}
+                  >
+                    {busy ? "Removing…" : "Remove"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setRemoving(null);
+                      setRemovePassword("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    setRemoving(passkey.id);
+                    setRemovePassword("");
+                  }}
+                >
+                  Remove
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {passkeys && passkeys.length === 0 && !adding && (
+        <p className="rounded-md border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+          No passkeys yet. Adding one lets you sign in without typing a
+          password.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function passkeyError(err: unknown, fallback: string): string {
+  if (!(err instanceof ApiError)) return fallback;
+  if (err.code === "invalid_credentials")
+    return "That password is not correct.";
+  if (err.code === "passkey_expired") return "That prompt expired. Try again.";
+  return err.message;
 }
 
 function RecoveryCodesSection() {
-  const [remaining, setRemaining] = useState<number | null>(null)
-  const [codes, setCodes] = useState<string[] | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [codes, setCodes] = useState<string[] | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     api
       .recoveryStatus()
       .then((r) => setRemaining(r.remaining))
-      .catch(() => setRemaining(null))
-  }, [])
+      .catch(() => setRemaining(null));
+  }, []);
 
   async function regenerate() {
-    setBusy(true)
+    setBusy(true);
     try {
-      const result = await api.regenerateRecoveryCodes()
-      setCodes(result.codes)
-      setRemaining(result.codes.length)
-      toast.success('New recovery codes generated')
+      const result = await api.regenerateRecoveryCodes();
+      setCodes(result.codes);
+      setRemaining(result.codes.length);
+      toast.success("New recovery codes generated");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not generate codes.')
+      toast.error(
+        err instanceof ApiError ? err.message : "Could not generate codes.",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
@@ -316,20 +618,30 @@ function RecoveryCodesSection() {
     <section className="space-y-3">
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Recovery codes</h2>
+          <h2 className="text-base font-semibold text-foreground">
+            Recovery codes
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Use one to reset a forgotten password, because there is no email recovery!
+            Use one to reset a forgotten password, because there is no email
+            recovery!
             {remaining !== null && ` ${remaining} left.`}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="ml-auto shrink-0" onClick={regenerate} disabled={busy}>
-          {busy ? 'Generating…' : 'Regenerate'}
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto shrink-0"
+          onClick={regenerate}
+          disabled={busy}
+        >
+          {busy ? "Generating…" : "Regenerate"}
         </Button>
       </div>
       {codes && (
         <div className="space-y-2 rounded-md border p-3">
           <p className="text-xs text-muted-foreground">
-            Save these now, they are shown only once, and regenerating replaced any previous set!
+            Save these now, they are shown only once, and regenerating replaced
+            any previous set!
           </p>
           <div className="grid grid-cols-2 gap-1.5 font-mono text-sm">
             {codes.map((code) => (
@@ -339,48 +651,56 @@ function RecoveryCodesSection() {
         </div>
       )}
     </section>
-  )
+  );
 }
 
 function PasswordSection() {
-  const [current, setCurrent] = useState('')
-  const [next, setNext] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [errors, setErrors] = useState<FieldErrors>({})
-  const [busy, setBusy] = useState(false)
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [busy, setBusy] = useState(false);
 
   async function submit(event: SubmitEvent) {
-    event.preventDefault()
-    const found: FieldErrors = {}
-    if (!current) found.current_password = 'Enter your current password.'
-    if ([...next].length < 12) found.password = 'Use at least 12 characters.'
-    if (confirm !== next) found.confirm = 'These do not match.'
-    setErrors(found)
-    if (Object.values(found).some(Boolean)) return
+    event.preventDefault();
+    const found: FieldErrors = {};
+    if (!current) found.current_password = "Enter your current password.";
+    if ([...next].length < 12) found.password = "Use at least 12 characters.";
+    if (confirm !== next) found.confirm = "These do not match.";
+    setErrors(found);
+    if (Object.values(found).some(Boolean)) return;
 
-    setBusy(true)
+    setBusy(true);
     try {
-      await api.changePassword(current, next)
-      toast.success('Password changed. Other devices were signed out.')
-      setCurrent('')
-      setNext('')
-      setConfirm('')
+      await api.changePassword(current, next);
+      toast.success("Password changed. Other devices were signed out.");
+      setCurrent("");
+      setNext("");
+      setConfirm("");
     } catch (err) {
       if (err instanceof ApiError && err.problem.errors) {
-        setErrors(err.problem.errors as FieldErrors)
+        setErrors(err.problem.errors as FieldErrors);
       } else {
-        toast.error(err instanceof ApiError ? err.message : 'Could not change the password.')
+        toast.error(
+          err instanceof ApiError
+            ? err.message
+            : "Could not change the password.",
+        );
       }
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Change password</h2>
-        <p className="text-sm text-muted-foreground">Changing it signs out every other device.</p>
+        <h2 className="text-base font-semibold text-foreground">
+          Change password
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Changing it signs out every other device.
+        </p>
       </div>
       <form onSubmit={submit} noValidate className="max-w-sm space-y-3">
         <Field label="Current password" error={errors.current_password}>
@@ -411,77 +731,100 @@ function PasswordSection() {
           />
         </Field>
         <Button type="submit" disabled={busy}>
-          {busy ? 'Changing…' : 'Change password'}
+          {busy ? "Changing…" : "Change password"}
         </Button>
       </form>
     </section>
-  )
+  );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
-  )
+  );
 }
 
 function SessionsSection({ onSignedOut }: { onSignedOut: () => void }) {
-  const [sessions, setSessions] = useState<SessionInfo[]>([])
-  const [loading, setLoading] = useState(true)
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      setSessions((await api.listSessions()).sessions)
+      setSessions((await api.listSessions()).sessions);
     } catch {
-      toast.error('Could not load your sessions.')
+      toast.error("Could not load your sessions.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void load();
+  }, [load]);
 
   async function revoke(session: SessionInfo) {
     try {
-      await api.revokeSession(session.id)
+      await api.revokeSession(session.id);
       if (session.current) {
-        onSignedOut() // ended the session we are on
-        return
+        onSignedOut(); // ended the session we are on
+        return;
       }
-      toast.success('Session ended')
-      await load()
+      toast.success("Session ended");
+      await load();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not end this session.')
+      toast.error(
+        err instanceof ApiError ? err.message : "Could not end this session.",
+      );
     }
   }
 
   async function revokeOthers() {
     try {
-      await api.revokeOtherSessions()
-      toast.success('Other devices were signed out')
-      await load()
+      await api.revokeOtherSessions();
+      toast.success("Other devices were signed out");
+      await load();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not sign out other devices.')
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Could not sign out other devices.",
+      );
     }
   }
 
-  const others = sessions.filter((s) => !s.current).length
+  const others = sessions.filter((s) => !s.current).length;
 
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Active sessions</h2>
-          <p className="text-sm text-muted-foreground">Devices signed in to your account.</p>
+          <h2 className="text-base font-semibold text-foreground">
+            Active sessions
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Devices signed in to your account.
+          </p>
         </div>
         {others > 0 && (
-          <Button variant="outline" size="sm" className="ml-auto" onClick={revokeOthers}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={revokeOthers}
+          >
             Sign out other devices
           </Button>
         )}
@@ -489,24 +832,35 @@ function SessionsSection({ onSignedOut }: { onSignedOut: () => void }) {
 
       {loading ? (
         <div className="grid place-items-center py-6">
-          <CircleNotchIcon className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+          <CircleNotchIcon
+            className="size-5 animate-spin text-muted-foreground"
+            aria-label="Loading"
+          />
         </div>
       ) : (
         <ul className="divide-y rounded-md border">
           {sessions.map((session) => {
-            const Icon = isMobile(session.user_agent) ? DeviceMobileIcon : MonitorIcon
+            const Icon = isMobile(session.user_agent)
+              ? DeviceMobileIcon
+              : MonitorIcon;
             return (
-              <li key={session.id} className="flex items-center gap-3 px-3 py-2.5">
+              <li
+                key={session.id}
+                className="flex items-center gap-3 px-3 py-2.5"
+              >
                 <Icon className="size-5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 truncate text-sm">
                     {deviceLabel(session.user_agent)}
                     {session.current && (
-                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">This device</span>
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+                        This device
+                      </span>
                     )}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {session.location && `${session.location} · `}active {formatRelativeTime(session.last_seen_at)}
+                    {session.location && `${session.location} · `}active{" "}
+                    {formatRelativeTime(session.last_seen_at)}
                   </p>
                 </div>
                 <Button
@@ -515,96 +869,110 @@ function SessionsSection({ onSignedOut }: { onSignedOut: () => void }) {
                   className="shrink-0 text-muted-foreground hover:text-destructive"
                   onClick={() => revoke(session)}
                 >
-                  {session.current ? 'Sign out' : 'End'}
+                  {session.current ? "Sign out" : "End"}
                 </Button>
               </li>
-            )
+            );
           })}
         </ul>
       )}
     </section>
-  )
+  );
 }
 
 const RETENTION_OPTIONS = [
-  { label: 'Keep forever', days: 0 },
-  { label: '7 days', days: 7 },
-  { label: '30 days', days: 30 },
-  { label: '90 days', days: 90 },
-  { label: '180 days', days: 180 },
-  { label: '1 year', days: 365 },
-]
+  { label: "Keep forever", days: 0 },
+  { label: "7 days", days: 7 },
+  { label: "30 days", days: 30 },
+  { label: "90 days", days: 90 },
+  { label: "180 days", days: 180 },
+  { label: "1 year", days: 365 },
+];
 
 const retentionSelectClass =
-  'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
 
 function StorageSection() {
-  const [space, setSpace] = useState<Space | null>(null)
+  const [space, setSpace] = useState<Space | null>(null);
 
   useEffect(() => {
     api
       .space()
       .then(setSpace)
-      .catch(() => toast.error('Could not load storage usage.'))
-  }, [])
+      .catch(() => toast.error("Could not load storage usage."));
+  }, []);
 
   return (
     <section className="space-y-3">
       <div>
         <h2 className="text-base font-semibold text-foreground">Storage</h2>
         <p className="text-sm text-muted-foreground">
-          Live files across all accounts. Trash and generated thumbnails don’t count.
+          Live files across all accounts. Trash and generated thumbnails don’t
+          count.
         </p>
       </div>
       {!space ? (
         <div className="grid place-items-center py-6">
-          <CircleNotchIcon className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+          <CircleNotchIcon
+            className="size-5 animate-spin text-muted-foreground"
+            aria-label="Loading"
+          />
         </div>
       ) : (
         <div className="flex h-14 items-center gap-3 rounded-lg border px-4">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm">
               {formatSize(space.instance_used)}
-              {space.instance_total > 0 ? ` of ${formatSize(space.instance_total)}` : ''} used
+              {space.instance_total > 0
+                ? ` of ${formatSize(space.instance_total)}`
+                : ""}{" "}
+              used
             </p>
             <p className="truncate text-xs text-muted-foreground">
               {space.instance_total > 0
-                ? 'Instance max storage quota.'
-                : 'No instance quota configured.'}
+                ? "Instance max storage quota."
+                : "No instance quota configured."}
             </p>
           </div>
         </div>
       )}
     </section>
-  )
+  );
 }
 
 function RetentionSection() {
-  const [audit, setAudit] = useState('0')
-  const [trash, setTrash] = useState('0')
-  const [loading, setLoading] = useState(true)
-  const [busy, setBusy] = useState(false)
+  const [audit, setAudit] = useState("0");
+  const [trash, setTrash] = useState("0");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     api
       .getRetention()
       .then((r) => {
-        setAudit(String(r.audit_days))
-        setTrash(String(r.trash_days))
+        setAudit(String(r.audit_days));
+        setTrash(String(r.trash_days));
       })
-      .catch(() => toast.error('Could not load retention settings.'))
-      .finally(() => setLoading(false))
-  }, [])
+      .catch(() => toast.error("Could not load retention settings."))
+      .finally(() => setLoading(false));
+  }, []);
 
   async function save() {
-    setBusy(true)
+    setBusy(true);
     try {
-      await api.setRetention({ audit_days: Number(audit) || 0, trash_days: Number(trash) || 0 })
-      toast.success('Retention saved')
+      await api.setRetention({
+        audit_days: Number(audit) || 0,
+        trash_days: Number(trash) || 0,
+      });
+      toast.success("Retention saved");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not save retention settings.')
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Could not save retention settings.",
+      );
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
@@ -618,7 +986,10 @@ function RetentionSection() {
       </div>
       {loading ? (
         <div className="grid place-items-center py-6">
-          <CircleNotchIcon className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+          <CircleNotchIcon
+            className="size-5 animate-spin text-muted-foreground"
+            aria-label="Loading"
+          />
         </div>
       ) : (
         <div className="max-w-sm space-y-3">
@@ -649,10 +1020,10 @@ function RetentionSection() {
             </select>
           </Field>
           <Button onClick={save} disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
+            {busy ? "Saving…" : "Save"}
           </Button>
         </div>
       )}
     </section>
-  )
+  );
 }

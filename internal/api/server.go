@@ -154,6 +154,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/setup", s.handleSetupStatus)
 	mux.HandleFunc("POST /api/v1/setup", s.handleSetupComplete)
 	mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
+	mux.HandleFunc("GET /api/v1/auth/passkeys/status", s.handlePasskeyStatus)
+	mux.HandleFunc("POST /api/v1/auth/passkeys/login/options", s.handlePasskeyLoginOptions)
+	mux.HandleFunc("POST /api/v1/auth/passkeys/login/verify", s.handlePasskeyLoginVerify)
 	// Resetting a forgotten password happens before signing in, so it is open.
 	mux.HandleFunc("POST /api/v1/auth/reset", s.handleResetPassword)
 
@@ -171,6 +174,11 @@ func (s *Server) Handler() http.Handler {
 	authed.HandleFunc("POST /api/v1/auth/totp/enroll", s.handleTOTPEnroll)
 	authed.HandleFunc("POST /api/v1/auth/totp/enable", s.handleTOTPEnable)
 	authed.HandleFunc("POST /api/v1/auth/totp/disable", s.handleTOTPDisable)
+	// Managing passkeys needs the password again each time
+	authed.HandleFunc("GET /api/v1/auth/passkeys", s.handleListPasskeys)
+	authed.HandleFunc("POST /api/v1/auth/passkeys/register/options", s.handlePasskeyRegisterOptions)
+	authed.HandleFunc("POST /api/v1/auth/passkeys/register/verify", s.handlePasskeyRegisterVerify)
+	authed.HandleFunc("DELETE /api/v1/auth/passkeys/{id}", s.handlePasskeyRemove)
 	authed.HandleFunc("GET /api/v1/auth/recovery", s.handleRecoveryStatus)
 	authed.HandleFunc("POST /api/v1/auth/recovery", s.handleRegenerateRecovery)
 	authed.HandleFunc("GET /api/v1/auth/sessions", s.handleListSessions)

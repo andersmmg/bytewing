@@ -11,7 +11,7 @@ COPY web/ ./
 COPY internal/web/dist/.gitkeep /src/internal/web/dist/.gitkeep
 RUN pnpm run build
 
-FROM golang:1.25-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -42,9 +42,9 @@ RUN set -eu; \
     prev=$(printf '%04d-%02d' "$py" "$pm"); \
     mkdir -p /geoip; \
     for ym in "${Y}-${M}" "$prev"; do \
-      if curl -fsSL "https://download.db-ip.com/free/dbip-city-lite-${ym}.mmdb.gz" -o /tmp/g.gz; then \
-        gunzip -c /tmp/g.gz > /geoip/geoip.mmdb && break; \
-      fi; \
+    if curl -fsSL "https://download.db-ip.com/free/dbip-city-lite-${ym}.mmdb.gz" -o /tmp/g.gz; then \
+    gunzip -c /tmp/g.gz > /geoip/geoip.mmdb && break; \
+    fi; \
     done; \
     ls -la /geoip
 

@@ -212,3 +212,13 @@ type User struct {
 	QuotaBytes   int64
 	Theme        string
 }
+
+type WebauthnCredential struct {
+	ID           int64
+	UserID       int64
+	CredentialID []byte
+	Credential   string
+	Name         string
+	CreatedAt    int64
+	LastUsedAt   sql.NullInt64
+}

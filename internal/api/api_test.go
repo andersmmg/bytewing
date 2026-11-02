@@ -73,9 +73,18 @@ func newClient(t *testing.T, mutate ...func(*api.Options)) *client {
 	t.Cleanup(func() { _ = fs.Close() })
 
 	// Cheap hashing: these tests exercise routing and wiring, not Argon2.
-	service := auth.New(database, auth.WithParams(auth.Params{
-		Memory: 8, Iterations: 1, Parallelism: 1, SaltLength: 16, KeyLength: 32,
-	}))
+	// Passkeys get a fixed local origin, so the ceremony endpoints answer like
+	// production without a browser in the loop.
+	passkeys, err := auth.NewPasskeys("localhost", "http://localhost")
+	if err != nil {
+		t.Fatalf("webauthn: %v", err)
+	}
+	service := auth.New(database,
+		auth.WithParams(auth.Params{
+			Memory: 8, Iterations: 1, Parallelism: 1, SaltLength: 16, KeyLength: 32,
+		}),
+		auth.WithPasskeys(passkeys),
+	)
 
 	// A running worker, so a background copy actually completes in tests.
 	jobs := job.New(database, job.WithPollInterval(20*time.Millisecond))

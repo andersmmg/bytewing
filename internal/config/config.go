@@ -187,6 +187,11 @@ type S3Settings struct {
 // removes a way to misconfigure the instance into that state.
 func (c Config) SecureCookies() bool { return c.AppURL.Scheme == "https" }
 
+func (c Config) Origin() string {
+	origin := url.URL{Scheme: c.AppURL.Scheme, Host: c.AppURL.Host}
+	return origin.String()
+}
+
 // Load reads the configuration from the environment.
 func Load() (Config, error) {
 	cfg := Config{

@@ -5,201 +5,230 @@
 // It is written by hand only until the generated OpenAPI client lands in phase
 // 5; nothing here should encode knowledge the API does not publish.
 
+import type {
+  PasskeyCreationOptions,
+  PasskeyRequestOptions,
+} from "./lib/webauthn";
+
 export type Entry = {
-  path: string
-  name: string
-  size: number
-  mod_time: string
-  is_dir: boolean
-  symlink?: boolean
-  color?: string
-  ref?: string
-}
+  path: string;
+  name: string;
+  size: number;
+  mod_time: string;
+  is_dir: boolean;
+  symlink?: boolean;
+  color?: string;
+  ref?: string;
+};
 
-export type Listing = { path: string; entries: Entry[] }
+export type Listing = { path: string; entries: Entry[] };
 
-export type ChildCount = { files: number; dirs: number }
+export type ChildCount = { files: number; dirs: number };
 
 /** FileInfo is the /fs/info answer: the facts a details panel shows.
  *  Size and mod_time come from the tree */
 export type FileInfo = {
-  path: string
-  name: string
-  is_dir: boolean
-  size: number
-  mod_time: string
-  owner?: string
-  added_at?: string
-}
+  path: string;
+  name: string;
+  is_dir: boolean;
+  size: number;
+  mod_time: string;
+  owner?: string;
+  added_at?: string;
+};
 
 /** Share is a public link to a file. `url` is only present at creation — the
  *  token is shown once and never stored in plain form. */
 export type Share = {
-  id: number
-  url?: string
-  path: string
-  name: string
-  has_password: boolean
-  download_count: number
-  created_at: string
-  expires_at?: string
-}
+  id: number;
+  url?: string;
+  path: string;
+  name: string;
+  has_password: boolean;
+  download_count: number;
+  created_at: string;
+  expires_at?: string;
+};
 
 /** Job is a background operation (currently a large or folder copy). Progress is
  *  a fraction in [0,1]. */
-export type Retention = { audit_days: number; trash_days: number }
+export type Retention = { audit_days: number; trash_days: number };
 
 export type Checksum = {
-  path: string
-  algorithm: string
-  hash: string
-  size: number
-  computed_at: string
+  path: string;
+  algorithm: string;
+  hash: string;
+  size: number;
+  computed_at: string;
   /** Where the digest came from: 'compute' (the server hashed it), 'store'
    *  (the object store holds it), or 'client' (the browser's claim). */
-  source: string
-}
+  source: string;
+};
 
 export type Job = {
-  id: number
-  type: string
-  status: 'pending' | 'running' | 'done' | 'failed' | 'cancelled' | 'paused'
-  progress: number
-  bytes_done: number
-  bytes_total: number
-  error?: string
-  created_at: string
-  finished_at?: string
-}
+  id: number;
+  type: string;
+  status: "pending" | "running" | "done" | "failed" | "cancelled" | "paused";
+  progress: number;
+  bytes_done: number;
+  bytes_total: number;
+  error?: string;
+  created_at: string;
+  finished_at?: string;
+};
 
 /** PermSet is a permission bitmask as booleans, matching the API. */
 export type PermSet = {
-  read: boolean
-  write: boolean
-  delete: boolean
-  share: boolean
-  manage: boolean
-}
+  read: boolean;
+  write: boolean;
+  delete: boolean;
+  share: boolean;
+  manage: boolean;
+};
 
 /** AccessRule is one ACL rule at a path, as the manage-access screen shows it. */
 export type AccessRule = {
-  id: number
-  subject_type: string
-  subject_id: number
-  subject_name: string
-  perms: PermSet
-  recursive: boolean
-  deny: boolean
-}
+  id: number;
+  subject_type: string;
+  subject_id: number;
+  subject_name: string;
+  perms: PermSet;
+  recursive: boolean;
+  deny: boolean;
+};
 
 /** UserSummary is an account in the admin's user list. */
 export type UserSummary = {
-  id: number
-  username: string
-  is_admin: boolean
-  disabled: boolean
+  id: number;
+  username: string;
+  is_admin: boolean;
+  disabled: boolean;
   /** Cap on owned bytes; 0 means unlimited. */
-  quota_bytes: number
+  quota_bytes: number;
   /** Currently owned bytes. */
-  used_bytes: number
-}
+  used_bytes: number;
+};
 
 /** Group is a named set of users that rules can be granted to. */
-export type Group = { id: number; name: string; member_count: number }
+export type Group = { id: number; name: string; member_count: number };
 
 /** AuditEntry is one recorded action, as the activity log shows it. */
 export type AuditEntry = {
-  id: number
-  at: string
-  actor?: string
-  actor_id?: number
-  ip?: string
-  action: string
-  target?: string
-  details?: Record<string, unknown>
-}
+  id: number;
+  at: string;
+  actor?: string;
+  actor_id?: number;
+  ip?: string;
+  action: string;
+  target?: string;
+  details?: Record<string, unknown>;
+};
 
 /** SessionInfo is one of the caller's active sessions. */
 export type SessionInfo = {
-  id: number
-  current: boolean
-  user_agent?: string
-  location?: string
-  created_at: string
-  last_seen_at: string
-}
+  id: number;
+  current: boolean;
+  user_agent?: string;
+  location?: string;
+  created_at: string;
+  last_seen_at: string;
+};
+
+/** Passkey is one registered WebAuthn credential, as Settings lists it. The
+ *  credential itself stays on the server. */
+export type Passkey = {
+  id: number;
+  name: string;
+  /** Advisory hint about the authenticator (usb, internal, hybrid…). */
+  transports?: string[];
+  created_at: string;
+  last_used_at?: string;
+};
+
+/** The two halves of a passkey ceremony. `ceremony_id` names the challenge
+ *  held on the server; `public_key` is what the browser should be asked, with
+ *  byte fields as base64url strings until lib/webauthn decodes them. */
+export type PasskeyLoginOptions = {
+  ceremony_id: string;
+  public_key: PasskeyRequestOptions;
+};
+
+export type PasskeyRegisterOptions = {
+  ceremony_id: string;
+  public_key: PasskeyCreationOptions;
+};
 
 /** ApiToken is a long-lived credential for programmatic access. The plaintext
  *  is returned only once, at creation; afterwards only the prefix identifies it. */
 export type ApiToken = {
-  id: number
-  name: string
-  prefix: string
-  created_at: string
-  last_used_at?: string
-  expires_at?: string
-}
+  id: number;
+  name: string;
+  prefix: string;
+  created_at: string;
+  last_used_at?: string;
+  expires_at?: string;
+};
 
 /** TrashItem is an entry sitting in the trash, remembering where to restore it. */
 export type TrashItem = {
-  id: number
-  name: string
-  original_path: string
-  is_dir: boolean
-  size: number
-  deleted_at: string
-}
+  id: number;
+  name: string;
+  original_path: string;
+  is_dir: boolean;
+  size: number;
+  deleted_at: string;
+};
 export type User = {
-  id: number
-  username: string
-  email?: string
-  is_admin: boolean
-  totp_enabled?: boolean
-  theme?: string
-}
+  id: number;
+  username: string;
+  email?: string;
+  is_admin: boolean;
+  totp_enabled?: boolean;
+  theme?: string;
+};
 
 /** Invitation is a pending invite as an admin sees it. `token` is present only
  *  at creation — the interface builds the link from it and its own origin. */
 export type Invitation = {
-  id: number
-  email?: string
-  created_at: string
-  expires_at: string
-  token?: string
-}
+  id: number;
+  email?: string;
+  created_at: string;
+  expires_at: string;
+  token?: string;
+};
 export type Space = {
-  available: number
-  total: number
-  reserve: number
-  read_only: boolean
+  available: number;
+  total: number;
+  reserve: number;
+  read_only: boolean;
   /** The caller's owned bytes. */
-  used: number
+  used: number;
   /** The caller's cap in bytes; 0 means unlimited. */
-  quota: number
+  quota: number;
   /** Bytes of all live files on the instance. */
-  instance_used: number
+  instance_used: number;
   /** Instance cap when configured, else the volume size (0 when unknown). */
-  instance_total: number
-}
+  instance_total: number;
+};
 
 /** Problem is the RFC 9457 error body every failure returns. */
 export type Problem = {
-  type: string
-  title: string
-  status: number
-  code: string
-  detail?: string
+  type: string;
+  title: string;
+  status: number;
+  code: string;
+  detail?: string;
   /** Field name to message, when the failure is about specific input. */
-  errors?: Record<string, string>
-}
+  errors?: Record<string, string>;
+};
 
 /** ApiError carries the machine-readable code, which is what callers branch on. */
 export class ApiError extends Error {
   constructor(readonly problem: Problem) {
-    super(problem.detail || problem.title)
+    super(problem.detail || problem.title);
   }
   get code() {
-    return this.problem.code
+    return this.problem.code;
   }
 }
 
@@ -208,98 +237,150 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     // The session lives in an HttpOnly cookie, so it travels on its own and no
     // token is ever handled by this code.
-    credentials: 'same-origin',
+    credentials: "same-origin",
     headers: {
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...init.headers,
     },
-  })
+  });
 
-  if (response.status === 204) return undefined as T
+  if (response.status === 204) return undefined as T;
   if (!response.ok) {
-    let problem: Problem
+    let problem: Problem;
     try {
-      problem = (await response.json()) as Problem
+      problem = (await response.json()) as Problem;
     } catch {
-      problem = { type: '', title: response.statusText, status: response.status, code: 'unknown' }
+      problem = {
+        type: "",
+        title: response.statusText,
+        status: response.status,
+        code: "unknown",
+      };
     }
-    throw new ApiError(problem)
+    throw new ApiError(problem);
   }
-  return (await response.json()) as T
+  return (await response.json()) as T;
 }
 
 export const api = {
-  setupStatus: () => request<{ needs_setup: boolean }>('/api/v1/setup'),
+  setupStatus: () => request<{ needs_setup: boolean }>("/api/v1/setup"),
 
   completeSetup: (token: string, username: string, password: string) =>
-    request<{ user: User; recovery_codes?: string[] }>('/api/v1/setup', {
-      method: 'POST',
+    request<{ user: User; recovery_codes?: string[] }>("/api/v1/setup", {
+      method: "POST",
       body: JSON.stringify({ token, username, password }),
     }),
 
   // Reset a forgotten password with a recovery code — no email involved.
   resetPassword: (username: string, code: string, newPassword: string) =>
-    request<void>('/api/v1/auth/reset', {
-      method: 'POST',
+    request<void>("/api/v1/auth/reset", {
+      method: "POST",
       body: JSON.stringify({ username, code, new_password: newPassword }),
     }),
 
   // login sends the second factor only on the retry, after the first attempt
   // answered with the `totp_required` error code.
   login: (username: string, password: string, totpCode?: string) =>
-    request<{ user: User }>('/api/v1/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password, totp_code: totpCode ?? '' }),
+    request<{ user: User }>("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password, totp_code: totpCode ?? "" }),
     }),
 
-  logout: () => request<void>('/api/v1/auth/logout', { method: 'POST' }),
-  me: () => request<User>('/api/v1/auth/me'),
+  logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
+  me: () => request<User>("/api/v1/auth/me"),
 
   // Colour theme: one seed colour, per account
   setTheme: (theme: string) =>
-    request<{ theme: string }>('/api/v1/auth/theme', {
-      method: 'PUT',
+    request<{ theme: string }>("/api/v1/auth/theme", {
+      method: "PUT",
       body: JSON.stringify({ theme }),
     }),
 
   // Two-factor authentication (TOTP). enroll mints a candidate secret and the
   // otpauth URI to turn into a QR; enable saves it once a code confirms it.
-  enrollTOTP: () => request<{ secret: string; uri: string }>('/api/v1/auth/totp/enroll', { method: 'POST' }),
+  enrollTOTP: () =>
+    request<{ secret: string; uri: string }>("/api/v1/auth/totp/enroll", {
+      method: "POST",
+    }),
   enableTOTP: (secret: string, code: string) =>
-    request<void>('/api/v1/auth/totp/enable', { method: 'POST', body: JSON.stringify({ secret, code }) }),
+    request<void>("/api/v1/auth/totp/enable", {
+      method: "POST",
+      body: JSON.stringify({ secret, code }),
+    }),
   disableTOTP: (code: string) =>
-    request<void>('/api/v1/auth/totp/disable', { method: 'POST', body: JSON.stringify({ code }) }),
+    request<void>("/api/v1/auth/totp/disable", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  passkeyStatus: () =>
+    request<{ available: boolean }>("/api/v1/auth/passkeys/status"),
+  passkeyLoginOptions: () =>
+    request<PasskeyLoginOptions>("/api/v1/auth/passkeys/login/options", {
+      method: "POST",
+    }),
+  passkeyLogin: (ceremonyId: string, credential: unknown) =>
+    request<{ user: User }>("/api/v1/auth/passkeys/login/verify", {
+      method: "POST",
+      body: JSON.stringify({ ceremony_id: ceremonyId, credential }),
+    }),
+  listPasskeys: () => request<{ passkeys: Passkey[] }>("/api/v1/auth/passkeys"),
+
+  passkeyRegisterOptions: (password: string) =>
+    request<PasskeyRegisterOptions>("/api/v1/auth/passkeys/register/options", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+  passkeyRegister: (ceremonyId: string, name: string, credential: unknown) =>
+    request<Passkey>("/api/v1/auth/passkeys/register/verify", {
+      method: "POST",
+      body: JSON.stringify({ ceremony_id: ceremonyId, name, credential }),
+    }),
+  removePasskey: (id: number, password: string) =>
+    request<void>(`/api/v1/auth/passkeys/${id}`, {
+      method: "DELETE",
+      body: JSON.stringify({ password }),
+    }),
 
   // Account self-service: change your own password (which signs your other
   // devices out), and see or end your sessions.
   changePassword: (currentPassword: string, newPassword: string) =>
-    request<void>('/api/v1/auth/password', {
-      method: 'POST',
-      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    request<void>("/api/v1/auth/password", {
+      method: "POST",
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
     }),
   // Recovery codes: how many are left, and regenerate a fresh set (shown once).
-  recoveryStatus: () => request<{ remaining: number }>('/api/v1/auth/recovery'),
+  recoveryStatus: () => request<{ remaining: number }>("/api/v1/auth/recovery"),
   regenerateRecoveryCodes: () =>
-    request<{ codes: string[] }>('/api/v1/auth/recovery', { method: 'POST' }),
-  listSessions: () => request<{ sessions: SessionInfo[] }>('/api/v1/auth/sessions'),
-  revokeSession: (id: number) => request<void>(`/api/v1/auth/sessions/${id}`, { method: 'DELETE' }),
+    request<{ codes: string[] }>("/api/v1/auth/recovery", { method: "POST" }),
+  listSessions: () =>
+    request<{ sessions: SessionInfo[] }>("/api/v1/auth/sessions"),
+  revokeSession: (id: number) =>
+    request<void>(`/api/v1/auth/sessions/${id}`, { method: "DELETE" }),
   revokeOtherSessions: () =>
-    request<void>('/api/v1/auth/sessions/revoke-others', { method: 'POST' }),
+    request<void>("/api/v1/auth/sessions/revoke-others", { method: "POST" }),
 
   // API tokens. A token acts with the full authority of the account that made
   // it; the plaintext comes back only from createToken and is never shown again.
-  listTokens: () => request<{ tokens: ApiToken[] }>('/api/v1/tokens'),
+  listTokens: () => request<{ tokens: ApiToken[] }>("/api/v1/tokens"),
   createToken: (name: string, expiresInDays: number) =>
-    request<{ token: string; info: ApiToken }>('/api/v1/tokens', {
-      method: 'POST',
+    request<{ token: string; info: ApiToken }>("/api/v1/tokens", {
+      method: "POST",
       body: JSON.stringify({ name, expires_in_days: expiresInDays }),
     }),
-  revokeToken: (id: number) => request<void>(`/api/v1/tokens/${id}`, { method: 'DELETE' }),
+  revokeToken: (id: number) =>
+    request<void>(`/api/v1/tokens/${id}`, { method: "DELETE" }),
 
   // Retention policy (admin). Days; 0 keeps data indefinitely.
-  getRetention: () => request<Retention>('/api/v1/settings/retention'),
+  getRetention: () => request<Retention>("/api/v1/settings/retention"),
   setRetention: (r: Retention) =>
-    request<Retention>('/api/v1/settings/retention', { method: 'PUT', body: JSON.stringify(r) }),
+    request<Retention>("/api/v1/settings/retention", {
+      method: "PUT",
+      body: JSON.stringify(r),
+    }),
 
   // Invitations. Accepting is public (the account does not exist yet); creating,
   // listing and revoking are admin-only and the server enforces it.
@@ -308,75 +389,91 @@ export const api = {
       `/api/v1/invitations/check?token=${encodeURIComponent(token)}`,
     ),
   acceptInvitation: (token: string, username: string, password: string) =>
-    request<{ user: User; recovery_codes?: string[] }>('/api/v1/invitations/accept', {
-      method: 'POST',
-      body: JSON.stringify({ token, username, password }),
-    }),
+    request<{ user: User; recovery_codes?: string[] }>(
+      "/api/v1/invitations/accept",
+      {
+        method: "POST",
+        body: JSON.stringify({ token, username, password }),
+      },
+    ),
   createInvitation: (email: string) =>
-    request<Invitation>('/api/v1/invitations', {
-      method: 'POST',
+    request<Invitation>("/api/v1/invitations", {
+      method: "POST",
       body: JSON.stringify({ email }),
     }),
-  listInvitations: () => request<{ invitations: Invitation[] }>('/api/v1/invitations'),
-  revokeInvitation: (id: number) => request<void>(`/api/v1/invitations/${id}`, { method: 'DELETE' }),
+  listInvitations: () =>
+    request<{ invitations: Invitation[] }>("/api/v1/invitations"),
+  revokeInvitation: (id: number) =>
+    request<void>(`/api/v1/invitations/${id}`, { method: "DELETE" }),
 
-  list: (path: string) => request<Listing>(`/api/v1/fs?path=${encodeURIComponent(path)}`),
+  list: (path: string) =>
+    request<Listing>(`/api/v1/fs?path=${encodeURIComponent(path)}`),
 
-  info: (path: string) => request<FileInfo>(`/api/v1/fs/info?path=${encodeURIComponent(path)}`),
+  info: (path: string) =>
+    request<FileInfo>(`/api/v1/fs/info?path=${encodeURIComponent(path)}`),
 
-  count: (path: string) => request<ChildCount>(`/api/v1/fs/count?path=${encodeURIComponent(path)}`),
+  count: (path: string) =>
+    request<ChildCount>(`/api/v1/fs/count?path=${encodeURIComponent(path)}`),
 
   // search finds entries by name under a root folder (recursively). `truncated`
   // says the walk hit its limit and more matches may exist.
-  search: (query: string, path = '/') =>
+  search: (query: string, path = "/") =>
     request<{ query: string; results: Entry[]; truncated: boolean }>(
       `/api/v1/fs/search?q=${encodeURIComponent(query)}&path=${encodeURIComponent(path)}`,
     ),
 
-  space: () => request<Space>('/api/v1/fs/space'),
+  space: () => request<Space>("/api/v1/fs/space"),
 
   setColor: (path: string, color: string | null) =>
-    request<{ color: string }>('/api/v1/fs/color', {
-      method: 'PUT',
-      body: JSON.stringify({ path, color: color ?? '' }),
+    request<{ color: string }>("/api/v1/fs/color", {
+      method: "PUT",
+      body: JSON.stringify({ path, color: color ?? "" }),
     }),
 
   mkdir: (path: string) =>
-    request<Entry>('/api/v1/fs/dirs', { method: 'POST', body: JSON.stringify({ path }) }),
+    request<Entry>("/api/v1/fs/dirs", {
+      method: "POST",
+      body: JSON.stringify({ path }),
+    }),
 
   setReference: (path: string, target: string) =>
-    request<Entry>('/api/v1/fs/reference', {
-      method: 'PUT',
+    request<Entry>("/api/v1/fs/reference", {
+      method: "PUT",
       body: JSON.stringify({ path, target }),
     }),
 
   clearReference: (path: string) =>
-    request<void>(`/api/v1/fs/reference?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
+    request<void>(`/api/v1/fs/reference?path=${encodeURIComponent(path)}`, {
+      method: "DELETE",
+    }),
 
   move: (from: string, to: string) =>
-    request<Entry>('/api/v1/fs/move', { method: 'POST', body: JSON.stringify({ from, to }) }),
+    request<Entry>("/api/v1/fs/move", {
+      method: "POST",
+      body: JSON.stringify({ from, to }),
+    }),
 
   // copy returns the created entry for a file copied in place, or a job when the
   // source is a folder or too large to copy inside the request.
   copy: (from: string, to: string) =>
-    request<Entry | { job: Job }>('/api/v1/fs/copy', {
-      method: 'POST',
+    request<Entry | { job: Job }>("/api/v1/fs/copy", {
+      method: "POST",
       body: JSON.stringify({ from, to }),
     }),
 
   // extract unpacks a ZIP into a new folder beside it. It always runs as a
   // background job, so the response is the job to poll.
   extract: (archive: string) =>
-    request<{ job: Job }>('/api/v1/fs/extract', {
-      method: 'POST',
+    request<{ job: Job }>("/api/v1/fs/extract", {
+      method: "POST",
       body: JSON.stringify({ archive }),
     }),
 
   // fetchUrl downloads a URL into `dir` from the server's own network. It always
   // runs as a background job, so the response is the job to poll.
   fetchUrl: (url: string, dir: string) =>
-    request<{ job: Job }>('/api/v1/fs/fetch', {
-      method: 'POST',
+    request<{ job: Job }>("/api/v1/fs/fetch", {
+      method: "POST",
       body: JSON.stringify({ url, dir }),
     }),
 
@@ -385,28 +482,35 @@ export const api = {
   // cancel, pause and resume act on a running background job. Cancel discards a
   // download's partial; pause keeps it so resume can continue from where it
   // stopped. Each returns the job's fresh state.
-  cancelJob: (id: number) => request<Job>(`/api/v1/jobs/${id}/cancel`, { method: 'POST' }),
-  pauseJob: (id: number) => request<Job>(`/api/v1/jobs/${id}/pause`, { method: 'POST' }),
-  resumeJob: (id: number) => request<Job>(`/api/v1/jobs/${id}/resume`, { method: 'POST' }),
+  cancelJob: (id: number) =>
+    request<Job>(`/api/v1/jobs/${id}/cancel`, { method: "POST" }),
+  pauseJob: (id: number) =>
+    request<Job>(`/api/v1/jobs/${id}/pause`, { method: "POST" }),
+  resumeJob: (id: number) =>
+    request<Job>(`/api/v1/jobs/${id}/resume`, { method: "POST" }),
 
   // A file's SHA-256. Returns the cached digest when current, otherwise a job to
   // poll; call again once it is done to get the digest.
   checksum: (path: string) =>
-    request<{ checksum?: Checksum; job?: Job }>(`/api/v1/fs/checksum?path=${encodeURIComponent(path)}`),
+    request<{ checksum?: Checksum; job?: Job }>(
+      `/api/v1/fs/checksum?path=${encodeURIComponent(path)}`,
+    ),
 
   remove: (path: string, recursive = false) =>
     request<void>(
-      `/api/v1/fs?path=${encodeURIComponent(path)}${recursive ? '&recursive=true' : ''}`,
-      { method: 'DELETE' },
+      `/api/v1/fs?path=${encodeURIComponent(path)}${recursive ? "&recursive=true" : ""}`,
+      { method: "DELETE" },
     ),
 
   downloadLink: (path: string) =>
-    request<{ url: string; expires_at: string }>(`/api/v1/fs/link?path=${encodeURIComponent(path)}`),
+    request<{ url: string; expires_at: string }>(
+      `/api/v1/fs/link?path=${encodeURIComponent(path)}`,
+    ),
 
   // bundleLink mints a link to a streamed zip of several items or a folder.
   bundleLink: (paths: string[]) =>
-    request<{ url: string; expires_at: string }>('/api/v1/fs/bundle', {
-      method: 'POST',
+    request<{ url: string; expires_at: string }>("/api/v1/fs/bundle", {
+      method: "POST",
       body: JSON.stringify({ paths }),
     }),
 
@@ -417,78 +521,110 @@ export const api = {
     ),
 
   config: () =>
-    request<{ inline_preview: boolean; object_storage: boolean; url_fetch: boolean; version: string }>(
-      '/api/v1/config',
-    ),
+    request<{
+      inline_preview: boolean;
+      object_storage: boolean;
+      url_fetch: boolean;
+      version: string;
+    }>("/api/v1/config"),
 
-  createShare: (path: string, opts: { expires_in_hours?: number; password?: string } = {}) =>
-    request<Share>('/api/v1/shares', {
-      method: 'POST',
+  createShare: (
+    path: string,
+    opts: { expires_in_hours?: number; password?: string } = {},
+  ) =>
+    request<Share>("/api/v1/shares", {
+      method: "POST",
       body: JSON.stringify({ path, ...opts }),
     }),
-  listShares: () => request<{ shares: Share[] }>('/api/v1/shares'),
-  revokeShare: (id: number) => request<void>(`/api/v1/shares/${id}`, { method: 'DELETE' }),
-  sharedWithMe: () => request<{ entries: Entry[] }>('/api/v1/shared-with-me'),
+  listShares: () => request<{ shares: Share[] }>("/api/v1/shares"),
+  revokeShare: (id: number) =>
+    request<void>(`/api/v1/shares/${id}`, { method: "DELETE" }),
+  sharedWithMe: () => request<{ entries: Entry[] }>("/api/v1/shared-with-me"),
 
   effectivePermissions: (path: string) =>
     request<PermSet>(`/api/v1/permissions?path=${encodeURIComponent(path)}`),
   listAudit: (before?: number) =>
     request<{ entries: AuditEntry[]; next_before: number }>(
-      `/api/v1/audit${before ? `?before=${before}` : ''}`,
+      `/api/v1/audit${before ? `?before=${before}` : ""}`,
     ),
 
-  listUsers: () => request<{ users: UserSummary[] }>('/api/v1/users'),
-  updateUser: (id: number, patch: { is_admin?: boolean; disabled?: boolean; quota_bytes?: number }) =>
-    request<UserSummary>(`/api/v1/users/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
-  deleteUser: (id: number) => request<void>(`/api/v1/users/${id}`, { method: 'DELETE' }),
+  listUsers: () => request<{ users: UserSummary[] }>("/api/v1/users"),
+  updateUser: (
+    id: number,
+    patch: { is_admin?: boolean; disabled?: boolean; quota_bytes?: number },
+  ) =>
+    request<UserSummary>(`/api/v1/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  deleteUser: (id: number) =>
+    request<void>(`/api/v1/users/${id}`, { method: "DELETE" }),
   listAccess: (path: string) =>
-    request<{ rules: AccessRule[] }>(`/api/v1/access?path=${encodeURIComponent(path)}`),
+    request<{ rules: AccessRule[] }>(
+      `/api/v1/access?path=${encodeURIComponent(path)}`,
+    ),
   grantAccess: (body: {
-    subject_type?: 'user' | 'group'
-    subject_id: number
-    path: string
-    perms: PermSet
-    recursive: boolean
-    deny?: boolean
-  }) => request<AccessRule>('/api/v1/access', { method: 'POST', body: JSON.stringify(body) }),
-  revokeAccess: (id: number) => request<void>(`/api/v1/access/${id}`, { method: 'DELETE' }),
+    subject_type?: "user" | "group";
+    subject_id: number;
+    path: string;
+    perms: PermSet;
+    recursive: boolean;
+    deny?: boolean;
+  }) =>
+    request<AccessRule>("/api/v1/access", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  revokeAccess: (id: number) =>
+    request<void>(`/api/v1/access/${id}`, { method: "DELETE" }),
 
-  listGroups: () => request<{ groups: Group[] }>('/api/v1/groups'),
+  listGroups: () => request<{ groups: Group[] }>("/api/v1/groups"),
   createGroup: (name: string) =>
-    request<Group>('/api/v1/groups', { method: 'POST', body: JSON.stringify({ name }) }),
-  deleteGroup: (id: number) => request<void>(`/api/v1/groups/${id}`, { method: 'DELETE' }),
-  groupMembers: (id: number) => request<{ member_ids: number[] }>(`/api/v1/groups/${id}/members`),
+    request<Group>("/api/v1/groups", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  deleteGroup: (id: number) =>
+    request<void>(`/api/v1/groups/${id}`, { method: "DELETE" }),
+  groupMembers: (id: number) =>
+    request<{ member_ids: number[] }>(`/api/v1/groups/${id}/members`),
   addGroupMember: (groupId: number, userId: number) =>
-    request<void>(`/api/v1/groups/${groupId}/members/${userId}`, { method: 'PUT' }),
+    request<void>(`/api/v1/groups/${groupId}/members/${userId}`, {
+      method: "PUT",
+    }),
   removeGroupMember: (groupId: number, userId: number) =>
-    request<void>(`/api/v1/groups/${groupId}/members/${userId}`, { method: 'DELETE' }),
+    request<void>(`/api/v1/groups/${groupId}/members/${userId}`, {
+      method: "DELETE",
+    }),
 
-  listTrash: () => request<{ items: TrashItem[] }>('/api/v1/trash'),
-  restoreTrash: (id: number) => request<void>(`/api/v1/trash/${id}/restore`, { method: 'POST' }),
-  purgeTrash: (id: number) => request<void>(`/api/v1/trash/${id}`, { method: 'DELETE' }),
-  emptyTrash: () => request<void>('/api/v1/trash', { method: 'DELETE' }),
-}
+  listTrash: () => request<{ items: TrashItem[] }>("/api/v1/trash"),
+  restoreTrash: (id: number) =>
+    request<void>(`/api/v1/trash/${id}/restore`, { method: "POST" }),
+  purgeTrash: (id: number) =>
+    request<void>(`/api/v1/trash/${id}`, { method: "DELETE" }),
+  emptyTrash: () => request<void>("/api/v1/trash", { method: "DELETE" }),
+};
 
 /** joinPath builds a child path without producing a double separator at the root. */
 export function joinPath(parent: string, name: string): string {
-  return parent === '/' ? `/${name}` : `${parent}/${name}`
+  return parent === "/" ? `/${name}` : `${parent}/${name}`;
 }
 
 /** parentOf returns the containing directory. */
 export function parentOf(path: string): string {
-  const cut = path.lastIndexOf('/')
-  return cut <= 0 ? '/' : path.slice(0, cut)
+  const cut = path.lastIndexOf("/");
+  return cut <= 0 ? "/" : path.slice(0, cut);
 }
 
 /** formatSize renders a byte count the way a file manager does. */
 export function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  const units = ['KB', 'MB', 'GB', 'TB']
-  let value = bytes / 1024
-  let unit = 0
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
+    value /= 1024;
+    unit++;
   }
-  return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`
+  return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`;
 }

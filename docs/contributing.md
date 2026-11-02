@@ -9,7 +9,7 @@ this page is a short orientation.
 
 The design was written down before the code and is kept in the repository under
 [`docs/design/`](https://github.com/krishna2206/zefile/tree/main/docs/design).
-They are the reference for the *what* and the *why*:
+They are the reference for the _what_ and the _why_:
 
 - **conception.html** — scope, architecture, data model, security, API, deployment
 - **roadmap.html** — the work plan and what has shipped
@@ -17,7 +17,7 @@ They are the reference for the *what* and the *why*:
 
 ## Working on the code
 
-- Backend is Go 1.25 with pure-Go SQLite; run `make check` before a PR.
+- Backend is Go 1.27 with pure-Go SQLite; run `make check` before a PR.
 - Frontend is React + Vite in `web/`.
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org)
   (`feat:`, `fix:`, `docs:`, …); releases are cut automatically by
