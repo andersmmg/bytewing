@@ -7,7 +7,8 @@
 <p align="center"><em>Because it's not just another file browser.</em></p>
 
 A self-hosted file server in a single binary. Store, organise and share large files
-on your own server, with a security model and an API designed in from the start.
+on your own server or an S3-compatible store, with a security model and an API built in
+from the start.
 
 ---
 
@@ -21,18 +22,18 @@ on your own server, with a security model and an API designed in from the start.
 
 ## Why
 
-[File Browser](https://github.com/filebrowser/filebrowser) is archived on 1 September 2026.
-Its author explained clearly why it could not be fixed by patching: written without a security
-model or API design, it would need a rewrite. Known vulnerabilities remain public and unfixed.
+[File Browser](https://github.com/filebrowser/filebrowser) was archived on 1 September 2026.
+Its [author explained why](https://hacdias.com/2026/07/28/filebrowser/) it could not be fixed by
+patching: written without a security model or API design, it would need a rewrite. Known
+vulnerabilities remain public and unfixed.
 
-ByteWing is that rewrite — a new project, not a fork. Nothing is inherited from the original
-codebase except the lessons it documented.
+ByteWing is that rewrite.
 
 ## What it does
 
 **Files**
 
-- Browse as a list or a grid, sorted and grouped, with image thumbnails and a
+- Browse as a list or a grid, sorted and grouped, with thumbnails and a
   recursive search that only shows what you are allowed to see.
 - **Resumable uploads** (tus), because a 40 GB transfer that fails at 90% must not
   start over. Drag in files or a whole folder tree.
@@ -46,17 +47,18 @@ codebase except the lessons it documented.
   everything else, symlinks are ignored, and a decompression bomb is refused by
   caps on entry count, total size and per-entry expansion.
 - **Download from a URL** straight to the server, at its bandwidth rather than
-  yours — the point when the file is tens of gigabytes. The fetch is guarded
-  against server-side request forgery: the real IP being dialed is validated on
-  every connection and every redirect, so a URL that resolves or redirects to an
+  yours — which matters when the file is tens of gigabytes. Off by default;
+  `BYTEWING_ALLOW_URL_FETCH` turns it on. The fetch is guarded against
+  server-side request forgery: the real IP being dialled is validated on every
+  connection and every redirect, so a URL that resolves or redirects to an
   internal address is refused.
 
 **Sharing**
 
-- Unique, revocable **share links** for a file or a folder, with an expiry and an
-  optional password.
-- Links work with download managers — no JavaScript, no cookies, correct `Range`
-  support, parallel connections. Served from a separate origin so a shared file
+- Unique, revocable **share links** for a file or a folder: an optional expiry,
+  and (for a single file) an optional password.
+- Links work with download managers. No JavaScript, no cookies, correct `Range`
+  support, and parallel connections. Served from a separate origin so a shared file
   can never reach a session.
 
 **Multiple people**
@@ -71,14 +73,15 @@ codebase except the lessons it documented.
   forgotten password — no email anywhere.
 - **Passkeys** (WebAuthn) alongside the password: register one in settings, then
   sign in with a biometric or PIN instead of typing anything. The password keeps
-  working, and two-factor still applies where it applies.
-- An **audit log** records every sensitive action; how long it, and the trash, are
-  kept is configurable.
+  working and managing passkeys always asks for the
+  password again.
+- An **audit log** records every sensitive action; how long the log and the trash
+  are kept is configurable.
 
 **Throughout**
 
-- **One binary.** Embedded web UI, pure-Go SQLite, no runtime dependencies and no
-  database server.
+- **One binary.** Embedded web UI, pure-Go SQLite, no database server. Video
+  thumbnails use `ffmpeg` when it is installed; nothing else needs it.
 - **Sessions that actually end.** Opaque server-side tokens, never JWT. Logging
   out revokes the token immediately.
 - **API tokens** for scripts, CI and integrations. A token carries your own
@@ -130,15 +133,14 @@ The log prints a one-time setup link. Open it to create the administrator.
 **There is no default account.** Shipping known credentials means every
 instance is compromised between deployment and the moment someone remembers to
 change them, and scanners know the default of every self-hosted project. The
-setup link is single-use, expires in 24 hours, and is replaced every time
-ByteWing starts — so one printed into a log you have since rotated away stops
-being useful.
+setup link is single-use, expires in 24 hours, and is replaced on every start.
+An old one printed in a previous log stops working.
 
 Two things decide whether a deployment works:
 
-|                      |                                                                                                                                                                                                                                                                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BYTEWING_CONFIG_DIR`  | Must not sit inside `BYTEWING_DATA_DIR`. ByteWing refuses to start otherwise: a database users can list is one they can download, password hashes included.                                                                                                                                                                            |
+| Variable | Why it matters |
+| -------- | -------------- |
+| `BYTEWING_CONFIG_DIR` | Must not sit inside `BYTEWING_DATA_DIR`. ByteWing refuses to start otherwise: a database users can list is one they can download, password hashes included.                                                                                                                                                                            |
 | `BYTEWING_CONTENT_URL` | A second hostname. Without it, user content is served from the application origin and ByteWing hardens itself — every file becomes an attachment and nothing renders in place. On the object-storage backend this degradation does not apply: downloads are presigned redirects to the store's own origin, so previews keep working. |
 
 There are **no `PUID`/`PGID` to set**. ByteWing adopts whoever owns the data
