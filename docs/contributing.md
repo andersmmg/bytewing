@@ -1,14 +1,14 @@
 # Contributing
 
-Zefile is Apache-2.0 and welcomes contributions. The full guide lives in the
+ByteWing is Apache-2.0 and welcomes contributions. The full guide lives in the
 repository at
-[`CONTRIBUTING.md`](https://github.com/krishna2206/zefile/blob/main/CONTRIBUTING.md);
+[`CONTRIBUTING.md`](https://github.com/andersmmg/bytewing/blob/main/CONTRIBUTING.md);
 this page is a short orientation.
 
 ## Design documents
 
 The design was written down before the code and is kept in the repository under
-[`docs/design/`](https://github.com/krishna2206/zefile/tree/main/docs/design).
+[`docs/design/`](https://github.com/andersmmg/bytewing/tree/main/docs/design).
 They are the reference for the _what_ and the _why_:
 
 - **conception.html** — scope, architecture, data model, security, API, deployment

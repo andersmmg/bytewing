@@ -563,7 +563,7 @@ func TestOpenS3RefusesUnreachableBucket(t *testing.T) {
 }
 
 func TestS3Stat(t *testing.T) {
-	stub := newStubS3("docs/", ".zefile-trash/ignored")
+	stub := newStubS3("docs/", ".bytewing-trash/ignored")
 	stub.put("docs/", 0) // the marker carries the directory's mtime
 	stub.put("report.pdf", 5)
 	stub.put("docs/deep.txt", 7)
@@ -601,13 +601,13 @@ func TestS3Stat(t *testing.T) {
 	if _, err := s.Stat(ctx, MustParsePath("/phantom")); !errors.Is(err, ErrNotExist) {
 		t.Errorf("Stat(/phantom) = %v, want ErrNotExist", err)
 	}
-	if _, err := s.Stat(ctx, MustParsePath("/.zefile-trash")); !errors.Is(err, ErrReserved) {
+	if _, err := s.Stat(ctx, MustParsePath("/.bytewing-trash")); !errors.Is(err, ErrReserved) {
 		t.Errorf("Stat reserved = %v, want ErrReserved", err)
 	}
 }
 
 func TestS3List(t *testing.T) {
-	stub := newStubS3("docs/", "docs/deep.txt", ".zefile-trash/x", "report.pdf")
+	stub := newStubS3("docs/", "docs/deep.txt", ".bytewing-trash/x", "report.pdf")
 	stub.put("report.pdf", 5)
 	stub.put("docs/deep.txt", 7)
 	s := newTestS3(t, stub, nil)

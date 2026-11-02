@@ -14,8 +14,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // Actions. They are stable strings the interface groups and translates, so they

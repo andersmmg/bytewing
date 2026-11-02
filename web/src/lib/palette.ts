@@ -17,7 +17,7 @@ export const PALETTES: Palette[] = [
   { id: 'amber', label: 'Amber', seed: '#ffb642' }, // deep yellow <3
 ]
 
-const STORAGE_KEY = 'zefile-palette'
+const STORAGE_KEY = 'bytewing-palette'
 
 export function paletteById(id?: string | null): Palette {
   return PALETTES.find((p) => p.id === id) ?? paletteById(DEFAULT_PALETTE)

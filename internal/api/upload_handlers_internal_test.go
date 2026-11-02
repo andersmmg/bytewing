@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/krishna2206/zefile/internal/quota"
-	"github.com/krishna2206/zefile/internal/upload"
+	"github.com/andersmmg/bytewing/internal/quota"
+	"github.com/andersmmg/bytewing/internal/upload"
 )
 
 func TestWriteUploadErrorMapsQuotaExceeded(t *testing.T) {

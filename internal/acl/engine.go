@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // Engine resolves permissions against the database.

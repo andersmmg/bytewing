@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // Search walks the live tree rather than consulting the FTS index.

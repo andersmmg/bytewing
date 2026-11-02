@@ -1,9 +1,9 @@
 {
-  "name": "zefile-docs",
+  "name": "bytewing-docs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Documentation site for Zefile, built with VitePress.",
+  "description": "Documentation site for ByteWing, built with VitePress.",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",

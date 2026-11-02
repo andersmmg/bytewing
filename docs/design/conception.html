@@ -1,4 +1,4 @@
-<title>Zefile — Document de conception</title>
+<title>ByteWing — Document de conception</title>
 
 <style>
   :root {
@@ -476,9 +476,9 @@
 
   <header class="masthead">
     <div class="eyebrow">Document de conception · v1.3 · conception close</div>
-    <h1>Zefile</h1>
+    <h1>ByteWing</h1>
     <p class="standfirst">Un binaire unique pour stocker, organiser et partager de gros fichiers sur un VPS. Conçu comme le successeur spirituel de File Browser&nbsp;: la même promesse d’installation, avec un modèle de sécurité et une API pensés dès le départ.</p>
-    <p class="tagline">«&nbsp;Because it’s not just another file browser&nbsp;— it’s <em>Ze</em> file browser.&nbsp;»</p>
+    <p class="tagline">«&nbsp;Because it’s not just another file browser.&nbsp;»</p>
     <div class="docmeta">
       <span><b>Backend</b> Go</span>
       <span><b>Licence</b> Apache-2.0</span>
@@ -520,7 +520,7 @@
         <p>Ce document spécifie un remplaçant écrit de zéro. Pas un fork&nbsp;: le code existant est le passif, seules les idées d’ergonomie et la liste documentée de ses vulnérabilités sont réutilisables.</p>
 
         <h3><span class="sub">1.1</span>Le nom</h3>
-        <p><strong>Zefile</strong>&nbsp;— clin d’œil à l’article défini prononcé à la française. Pas un énième explorateur de fichiers&nbsp;: <em>ze</em> explorateur de fichiers.</p>
+        <p><strong>ByteWing</strong>&nbsp;— clin d’œil à l’article défini prononcé à la française. Pas un énième explorateur de fichiers&nbsp;: <em>ze</em> explorateur de fichiers.</p>
         <div class="note warn">
           <span class="label">Homonymie connue</span>
           <p>Il existe déjà <strong>zfile</strong>, un projet de stockage auto-hébergé actif, dont le nom ne diffère que d’une lettre et se prononce presque identiquement pour un lecteur non francophone. Aucun obstacle juridique, mais une confusion à prévoir en recherche et dans les discussions communautaires. Choix assumé.</p>
@@ -766,7 +766,7 @@
 
         <h3><span class="sub">6.2</span>Jetons d’API</h3>
         <p>Chaque utilisateur crée ses propres jetons, pour un script, une intégration ou la CI. Un jeton porte l’<strong>autorité complète du compte qui l’a créé</strong>&nbsp;— mêmes permissions, mêmes accès fichiers, résolus à chaque requête&nbsp;: modifier les droits du compte prend effet aussitôt sur ses jetons. <strong>Pas de portées</strong>&nbsp;: le modèle est délibérément simple, comme chez Dokploy. L’atténuation d’une fuite passe par la révocation du jeton concerné&nbsp;— et par le fait d’en créer un par usage&nbsp;— non par la restriction de ses droits.</p>
-        <p>Forme <code>zefile_live_&lt;aléatoire&gt;</code>&nbsp;— un préfixe explicite et non ambigu, pour que les outils de détection de secrets puissent le repérer dans un dépôt ou un journal. Seuls le haché et un préfixe court sont conservés&nbsp;; la valeur complète n’est affichée qu’une fois, à la création. Chaque jeton expose sa date de dernier usage, pour repérer et révoquer ce qui traîne.</p>
+        <p>Forme <code>bytewing_live_&lt;aléatoire&gt;</code>&nbsp;— un préfixe explicite et non ambigu, pour que les outils de détection de secrets puissent le repérer dans un dépôt ou un journal. Seuls le haché et un préfixe court sont conservés&nbsp;; la valeur complète n’est affichée qu’une fois, à la création. Chaque jeton expose sa date de dernier usage, pour repérer et révoquer ce qui traîne.</p>
 
         <h3><span class="sub">6.3</span>Journal d’audit</h3>
         <p>Le <code>share_access_log</code> (§08) ne couvre que les partages. Un système multi-utilisateurs doit pouvoir répondre à «&nbsp;que s’est-il passé&nbsp;»&nbsp;: connexions réussies et échouées, modifications de permissions, création et révocation de jetons, suppression de comptes, suppressions définitives de fichiers.</p>
@@ -1099,7 +1099,7 @@
         <div class="scope">
           <div class="scope-row">
             <div class="name">Nommage <span class="chip locked">Verrouillé</span></div>
-            <div class="desc">Module Go <code>github.com/&lt;compte&gt;/zefile</code>, binaire <code>zefile</code>, image Docker <code>zefile</code>, préfixe de jetons <code>zefile_live_</code>. Fixé avant la première ligne de code&nbsp;: renommer un module Go après publication oblige tous les consommateurs à modifier leurs imports.</div>
+            <div class="desc">Module Go <code>github.com/&lt;compte&gt;/bytewing</code>, binaire <code>bytewing</code>, image Docker <code>bytewing</code>, préfixe de jetons <code>bytewing_live_</code>. Fixé avant la première ligne de code&nbsp;: renommer un module Go après publication oblige tous les consommateurs à modifier leurs imports.</div>
           </div>
           <div class="scope-row">
             <div class="name">Binaire unique</div>
@@ -1130,8 +1130,8 @@
         <h3><span class="sub">12.4</span>Organisation du dépôt</h3>
         <p>Dépôt unique, frontend et backend ensemble. Ce n’est pas un choix de confort&nbsp;: le binaire embarque l’interface via <code>embed.FS</code>, donc la compilation Go dépend des fichiers produits par Vite. Deux dépôts imposeraient de synchroniser deux versions pour un artefact final unique. S’y ajoute le contrat d’API partagé&nbsp;— spec OpenAPI générée depuis le Go, types TypeScript générés depuis la spec.</p>
 
-        <div class="block"><pre><b>zefile/</b>
-├── <b>cmd/zefile/</b>          point d'entrée
+        <div class="block"><pre><b>bytewing/</b>
+├── <b>cmd/bytewing/</b>          point d'entrée
 ├── <b>internal/</b>
 │   ├── storage/         VFS, os.Root, application des ACL
 │   ├── auth/            sessions, jetons, TOTP
@@ -1164,7 +1164,7 @@
       </section>
       <section id="deploiement">
         <h2><span class="num">13</span><span>Déploiement</span></h2>
-        <p>La facilité d’installation est un critère de conception, pas une phase de documentation. File Browser doit une bonne part de son adoption à son binaire unique&nbsp;: Zefile doit être au moins aussi simple à mettre en service.</p>
+        <p>La facilité d’installation est un critère de conception, pas une phase de documentation. File Browser doit une bonne part de son adoption à son binaire unique&nbsp;: ByteWing doit être au moins aussi simple à mettre en service.</p>
 
         <h3><span class="sub">13.1</span>Un conteneur, un port, deux hôtes</h3>
         <p>La séparation d’origine (§4.1) est le seul surcoût de déploiement par rapport à File Browser. Il reste modeste&nbsp;: le binaire route selon l’en-tête <code>Host</code>, donc <strong>un seul conteneur et un seul port desservent les deux domaines</strong>. Le coût réel se limite à un enregistrement DNS supplémentaire et à un second domaine déclaré dans le proxy inverse.</p>
@@ -1172,30 +1172,30 @@
         <h3><span class="sub">13.2</span>Données et configuration strictement séparées</h3>
         <div class="note warn">
           <span class="label">Règle de démarrage</span>
-          <p>Si la base SQLite se trouve à l’intérieur de l’arborescence parcourue, les utilisateurs peuvent la lister, la télécharger&nbsp;— hachés de mots de passe compris&nbsp;— voire la supprimer. <strong>Zefile refuse de démarrer si le répertoire de configuration est situé dans la racine de stockage.</strong></p>
+          <p>Si la base SQLite se trouve à l’intérieur de l’arborescence parcourue, les utilisateurs peuvent la lister, la télécharger&nbsp;— hachés de mots de passe compris&nbsp;— voire la supprimer. <strong>ByteWing refuse de démarrer si le répertoire de configuration est situé dans la racine de stockage.</strong></p>
         </div>
         <p>La corbeille et les fragments d’upload en cours doivent en revanche résider <strong>sur le même système de fichiers que les données</strong>, faute de quoi supprimer un fichier de 40&nbsp;Go déclenche une copie complète au lieu d’un simple renommage. Ils vivent donc en répertoires cachés à l’intérieur de la racine, exclus des listings.</p>
 
         <h3><span class="sub">13.3</span>Composition de référence</h3>
         <div class="block"><pre><i>services:</i>
-  <b>zefile:</b>
-    image: ghcr.io/&lt;compte&gt;/zefile:latest
+  <b>bytewing:</b>
+    image: ghcr.io/&lt;compte&gt;/bytewing:latest
     restart: unless-stopped
     environment:
-      ZEFILE_APP_URL:     https://zefile.exemple.tld
-      ZEFILE_CONTENT_URL: https://dl.exemple.tld
-      ZEFILE_DATA_DIR:    /data
-      ZEFILE_CONFIG_DIR:  /config
+      BYTEWING_APP_URL:     https://bytewing.exemple.tld
+      BYTEWING_CONTENT_URL: https://dl.exemple.tld
+      BYTEWING_DATA_DIR:    /data
+      BYTEWING_CONFIG_DIR:  /config
       PUID: 1000
       PGID: 1000
     volumes:
       - <u>/mnt/stockage:/data</u>      <i># disque de l'hôte, pas un volume Docker</i>
-      - zefile-config:/config
+      - bytewing-config:/config
     ports:
       - "8080:8080"
 
 <i>volumes:</i>
-  <b>zefile-config:</b></pre></div>
+  <b>bytewing-config:</b></pre></div>
         <p class="caption">Le montage direct d’un répertoire de l’hôte donne accès à la totalité du disque du VPS, ou à un disque supplémentaire monté ailleurs&nbsp;— pas à un volume Docker cloisonné.</p>
 
         <h3><span class="sub">13.4</span>Mode origine unique</h3>
@@ -1216,7 +1216,7 @@
           </div>
           <div class="scope-row">
             <div class="name">Aucune configuration initiale</div>
-            <div class="desc">Aucun fichier à rédiger avant le premier lancement. Zefile génère un lien d’installation à usage unique, affiché dans les journaux, qui sert à créer le compte administrateur. Pas d’identifiants par défaut.</div>
+            <div class="desc">Aucun fichier à rédiger avant le premier lancement. ByteWing génère un lien d’installation à usage unique, affiché dans les journaux, qui sert à créer le compte administrateur. Pas d’identifiants par défaut.</div>
           </div>
           <div class="scope-row">
             <div class="name">Images multi-architectures</div>
@@ -1241,11 +1241,11 @@
         <p>Attente de base en auto-hébergement, et elle comporte un piège&nbsp;: <strong>copier le fichier SQLite pendant que le service tourne produit une sauvegarde corrompue</strong>. Une écriture peut être en cours, et le journal WAL vit dans des fichiers annexes. C’est l’erreur classique, et elle ne se découvre qu’au moment de restaurer.</p>
         <div class="scope">
           <div class="scope-row">
-            <div class="name"><code>zefile backup</code></div>
+            <div class="name"><code>bytewing backup</code></div>
             <div class="desc">Produit un instantané cohérent de la base à chaud, par <code>VACUUM INTO</code>&nbsp;— sûr sans interrompre le service. Sauvegarde les métadonnées seules&nbsp;: ACL, comptes, partages, corbeille, propriété. Les fichiers eux-mêmes relèvent des outils habituels (<code>rsync</code>, instantanés du système de fichiers), et il n’y a aucune raison de les dupliquer dans un format propriétaire.</div>
           </div>
           <div class="scope-row">
-            <div class="name"><code>zefile restore</code></div>
+            <div class="name"><code>bytewing restore</code></div>
             <div class="desc">Restaure une sauvegarde, puis <strong>signale les divergences</strong>&nbsp;: entrées ACL et de propriété pointant vers des chemins absents, éléments de corbeille disparus. Métadonnées et fichiers étant sauvegardés séparément, ils peuvent dater de moments différents&nbsp;— l’outil le dit plutôt que de laisser une incohérence silencieuse.</div>
           </div>
           <div class="scope-row">
@@ -1312,7 +1312,7 @@
       </section>
 
       <div class="colophon">
-        <span>Zefile — document de conception</span>
+        <span>ByteWing — document de conception</span>
         <span>Révision 1.3</span>
         <span>29 juillet 2026</span>
         <span>Statut&nbsp;: prêt pour l’implémentation</span>

@@ -1,6 +1,6 @@
 [
   {
-    "corsRuleName": "zefile-dev",
+    "corsRuleName": "bytewing-dev",
     "allowedHeaders": ["*"],
     "allowedOperations": ["s3_get", "s3_put", "s3_head"],
     "allowedOrigins": ["http://localhost:8080"],

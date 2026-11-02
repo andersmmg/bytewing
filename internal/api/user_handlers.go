@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/krishna2206/zefile/internal/acl"
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/auth"
+	"github.com/andersmmg/bytewing/internal/acl"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/auth"
 )
 
 type updateUserRequest struct {

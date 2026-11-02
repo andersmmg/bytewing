@@ -1,4 +1,4 @@
-BINARY  := zefile
+BINARY  := bytewing
 # The version comes from version.txt — the single source of truth release-please
 # maintains — so a local build reports the same version a Docker build does,
 # regardless of which git tags happen to be fetched. The `v` prefix matches the
@@ -10,7 +10,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 
 ## build: compile the binary into bin/ (Go only; run `make dist` to include the interface)
 build:
-	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/$(BINARY) ./cmd/zefile
+	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/$(BINARY) ./cmd/bytewing
 
 ## run: build and run
 run: build

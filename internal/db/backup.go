@@ -14,8 +14,8 @@ import (
 
 // The database is the irreplaceable half of an instance: the files live on disk
 // and are backed up by other means, but accounts, permissions, shares and tokens
-// live only here. These two functions back the `zefile backup` and
-// `zefile restore` commands.
+// live only here. These two functions back the `bytewing backup` and
+// `bytewing restore` commands.
 
 // DBPath returns the database file location inside a configuration directory.
 func DBPath(dir string) string { return filepath.Join(dir, FileName) }
@@ -66,7 +66,7 @@ type RestoreReport struct {
 // RestoreFrom replaces the database in configDir with the backup at src.
 //
 // The server must be stopped first: replacing the file under a running instance
-// would corrupt its open connection. src is validated as a healthy Zefile
+// would corrupt its open connection. src is validated as a healthy ByteWing
 // database before anything is touched, and the database being replaced is copied
 // aside first, so a mistaken restore is itself reversible.
 //
@@ -112,7 +112,7 @@ func RestoreFrom(ctx context.Context, configDir, dataDir, src string) (RestoreRe
 
 // checkDivergence returns the paths the database references — through access
 // rules, ownership and shares — that no longer exist under dataDir. The reverse
-// (files on disk the database does not mention) is normal for Zefile, where the
+// (files on disk the database does not mention) is normal for ByteWing, where the
 // filesystem is the authority, so it is not reported.
 func checkDivergence(ctx context.Context, dbPath, dataDir string) ([]string, error) {
 	pool, err := sql.Open("sqlite", dbPath+"?_pragma=query_only(true)&_pragma=busy_timeout(2000)")
@@ -144,7 +144,7 @@ func checkDivergence(ctx context.Context, dbPath, dataDir string) ([]string, err
 	return missing, rows.Err()
 }
 
-// validateBackup refuses a file that is not a healthy Zefile database, so a
+// validateBackup refuses a file that is not a healthy ByteWing database, so a
 // restore fails loudly before overwriting anything rather than leaving a broken
 // instance.
 func validateBackup(ctx context.Context, src string) error {
@@ -169,7 +169,7 @@ func validateBackup(ctx context.Context, src string) error {
 	}
 
 	// A plausible-but-wrong SQLite file (someone's other database) should be
-	// rejected too: a Zefile backup has these tables.
+	// rejected too: a ByteWing backup has these tables.
 	for _, table := range []string{"users", "goose_db_version"} {
 		var n int
 		q := "SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?"
@@ -177,7 +177,7 @@ func validateBackup(ctx context.Context, src string) error {
 			return fmt.Errorf("db: inspect backup: %w", err)
 		}
 		if n == 0 {
-			return fmt.Errorf("db: %q does not look like a Zefile backup (missing table %q)", src, table)
+			return fmt.Errorf("db: %q does not look like a ByteWing backup (missing table %q)", src, table)
 		}
 	}
 	return nil

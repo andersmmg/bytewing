@@ -12,7 +12,7 @@ import (
 // the size of the volume.
 //
 // Bavail is used rather than Bfree: the difference between them is the space
-// reserved for root, which Zefile never gets to use and so must not count as
+// reserved for root, which ByteWing never gets to use and so must not count as
 // free. Treating it as free is how a service ends up refusing writes at what it
 // believes is 5% remaining.
 func availableSpace(path string) (available, total uint64, err error) {

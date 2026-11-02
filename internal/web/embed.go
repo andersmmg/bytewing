@@ -1,6 +1,6 @@
 // Package web serves the built single-page interface from inside the binary.
 //
-// The assets are compiled into the executable, so deploying Zefile stays a
+// The assets are compiled into the executable, so deploying ByteWing stays a
 // matter of copying one file. Nothing here is generated at run time: the whole
 // interface is produced by the frontend build and embedded as it stands.
 package web

@@ -86,7 +86,7 @@ func TestS3StageCommitMultipart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewStage: %v", err)
 	}
-	payload := bytes.Repeat([]byte("zefile"), 3) // 18 bytes: parts 5, 5, 5, 3
+	payload := bytes.Repeat([]byte("bytewing"), 3) // 18 bytes: parts 5, 5, 5, 3
 	if _, err := s.AppendToStage(ctx, id, 0, bytes.NewReader(payload)); err != nil {
 		t.Fatalf("append: %v", err)
 	}

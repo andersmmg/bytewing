@@ -21,7 +21,7 @@ const MaxThumbBytes = 1 << 20
 // opaque content hash, hidden under a reserved prefix in both backends.
 //
 // Reads and writes bypass the Guard like trash internals do: the caller
-// authorized the source file, and these keys are Zefile's own working data,
+// authorized the source file, and these keys are ByteWing's own working data,
 // never user paths.
 type ThumbStore interface {
 	ReadThumb(ctx context.Context, key string) ([]byte, error)

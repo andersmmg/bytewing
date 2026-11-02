@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/job"
+	"github.com/andersmmg/bytewing/internal/job"
 )
 
 type jobResponse struct {

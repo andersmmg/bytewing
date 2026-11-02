@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db"
+	"github.com/andersmmg/bytewing/internal/db"
 )
 
 // Test password hashing runs at the cheapest settings Argon2 accepts. The

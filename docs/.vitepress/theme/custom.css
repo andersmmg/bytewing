@@ -1,5 +1,5 @@
 /*
- * Zefile documentation theme.
+ * ByteWing documentation theme.
  *
  * Maps the palette and typography of the design documents (docs/design/*.html)
  * onto VitePress's CSS variables: warm paper ground, deep-green accent, serif
@@ -116,8 +116,8 @@
   width: 0.95em;
   height: 0.95em;
   margin-right: 0.35em;
-  /* base is /zefile/; update this if the base path changes. */
-  background: url('/zefile/logo.png') center / contain no-repeat;
+  /* base is /bytewing/; update this if the base path changes. */
+  background: url('/bytewing/logo.png') center / contain no-repeat;
   border-radius: 6px;
 }
 

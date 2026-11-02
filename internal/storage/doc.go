@@ -32,7 +32,7 @@
 //     Linux stores bytes verbatim.
 //
 // Callers only ever see key form. Translation happens at the syscall boundary,
-// and only when the direct lookup fails, so files created through Zefile cost
+// and only when the direct lookup fails, so files created through ByteWing cost
 // nothing extra.
 //
 // This matters beyond search results: an ACL entry recorded under one form

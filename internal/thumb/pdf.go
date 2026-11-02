@@ -15,7 +15,7 @@ import (
 	"github.com/klippa-app/go-pdfium/webassembly"
 	"github.com/tetratelabs/wazero"
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // A PDF's first page is rasterised in-process by PDFium run under wazero

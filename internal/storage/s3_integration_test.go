@@ -17,14 +17,14 @@ import (
 )
 
 // Integration tests against a real S3-compatible server. They skip unless
-// ZEFILE_TEST_S3_ENDPOINT is set, so the ordinary suite stays self-contained.
+// BYTEWING_TEST_S3_ENDPOINT is set, so the ordinary suite stays self-contained.
 // Locally the server is SeaweedFS:
 //
 //	weed mini -dir=./weed_temp    (SeaweedFS quick-start; S3 on :8333,
 //	identity admin/secret, bucket my-bucket)
-//	ZEFILE_TEST_S3_ENDPOINT=http://127.0.0.1:8333 \
-//	ZEFILE_TEST_S3_ACCESS_KEY_ID=admin ZEFILE_TEST_S3_SECRET_ACCESS_KEY=secret \
-//	ZEFILE_TEST_S3_BUCKET=my-bucket \
+//	BYTEWING_TEST_S3_ENDPOINT=http://127.0.0.1:8333 \
+//	BYTEWING_TEST_S3_ACCESS_KEY_ID=admin BYTEWING_TEST_S3_SECRET_ACCESS_KEY=secret \
+//	BYTEWING_TEST_S3_BUCKET=my-bucket \
 //	go test ./internal/storage -run Integration -v
 //
 // Against Backblaze B2 the same variables point at
@@ -33,18 +33,18 @@ import (
 
 func integrationConfig(t *testing.T) S3Config {
 	t.Helper()
-	endpoint := os.Getenv("ZEFILE_TEST_S3_ENDPOINT")
+	endpoint := os.Getenv("BYTEWING_TEST_S3_ENDPOINT")
 	if endpoint == "" {
-		t.Skip("ZEFILE_TEST_S3_ENDPOINT is not set; skipping the real-server S3 integration test")
+		t.Skip("BYTEWING_TEST_S3_ENDPOINT is not set; skipping the real-server S3 integration test")
 	}
-	bucket := envOr("ZEFILE_TEST_S3_BUCKET", "zefile-test")
+	bucket := envOr("BYTEWING_TEST_S3_BUCKET", "bytewing-test")
 	cfg := S3Config{
 		Endpoint:        endpoint,
-		Region:          envOr("ZEFILE_TEST_S3_REGION", "us-east-1"),
+		Region:          envOr("BYTEWING_TEST_S3_REGION", "us-east-1"),
 		Bucket:          bucket,
-		AccessKeyID:     os.Getenv("ZEFILE_TEST_S3_ACCESS_KEY_ID"),
-		SecretAccessKey: os.Getenv("ZEFILE_TEST_S3_SECRET_ACCESS_KEY"),
-		ForcePathStyle:  envOr("ZEFILE_TEST_S3_PATH_STYLE", "true") == "true",
+		AccessKeyID:     os.Getenv("BYTEWING_TEST_S3_ACCESS_KEY_ID"),
+		SecretAccessKey: os.Getenv("BYTEWING_TEST_S3_SECRET_ACCESS_KEY"),
+		ForcePathStyle:  envOr("BYTEWING_TEST_S3_PATH_STYLE", "true") == "true",
 	}
 	return cfg
 }
@@ -79,7 +79,7 @@ func TestS3IntegrationRoundTrip(t *testing.T) {
 	}
 
 	// A unique prefix per run keeps repeated runs independent.
-	cfg.Prefix = fmt.Sprintf("zefile-it-%d", time.Now().UnixNano())
+	cfg.Prefix = fmt.Sprintf("bytewing-it-%d", time.Now().UnixNano())
 	s, err := OpenS3(cfg)
 	if err != nil {
 		t.Fatalf("OpenS3: %v", err)
@@ -96,7 +96,7 @@ func TestS3IntegrationRoundTrip(t *testing.T) {
 	}
 
 	// A file placed directly into the bucket — the externally-created case.
-	body := bytes.Repeat([]byte("zefile "), 1<<16) // 448 KiB
+	body := bytes.Repeat([]byte("bytewing "), 1<<16) // 448 KiB
 	key := cfg.Prefix + "/alpha/beta/gamma/file.bin"
 	if _, err := probe.client.PutObject(ctx, &awss3.PutObjectInput{
 		Bucket: aws.String(cfg.Bucket),
@@ -149,7 +149,7 @@ func TestS3IntegrationDirectUpload(t *testing.T) {
 	if err != nil {
 		t.Skipf("bucket %q is not reachable (create it first): %v", cfg.Bucket, err)
 	}
-	cfg.Prefix = fmt.Sprintf("zefile-it-up-%d", time.Now().UnixNano())
+	cfg.Prefix = fmt.Sprintf("bytewing-it-up-%d", time.Now().UnixNano())
 	s, err := OpenS3(cfg)
 	if err != nil {
 		t.Fatalf("OpenS3: %v", err)
@@ -245,7 +245,7 @@ func TestS3IntegrationCopyMove(t *testing.T) {
 	if err != nil {
 		t.Skipf("bucket %q is not reachable (create it first): %v", cfg.Bucket, err)
 	}
-	cfg.Prefix = fmt.Sprintf("zefile-it-cp-%d", time.Now().UnixNano())
+	cfg.Prefix = fmt.Sprintf("bytewing-it-cp-%d", time.Now().UnixNano())
 	s, err := OpenS3(cfg)
 	if err != nil {
 		t.Fatalf("OpenS3: %v", err)

@@ -9,7 +9,7 @@ import (
 )
 
 // Limits on what a path may look like. These are deliberately stricter than any
-// filesystem requires: a name Zefile refuses is a name that cannot surprise us
+// filesystem requires: a name ByteWing refuses is a name that cannot surprise us
 // later, and no legitimate file needs a control character in it.
 const (
 	// MaxComponentBytes is the per-component limit, matching the common

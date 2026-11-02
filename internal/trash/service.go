@@ -8,9 +8,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // ErrNotFound means the trashed item is unknown or already gone.

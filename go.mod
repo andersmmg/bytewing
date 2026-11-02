@@ -1,4 +1,4 @@
-module github.com/krishna2206/zefile
+module github.com/andersmmg/bytewing
 
 go 1.27.0
 

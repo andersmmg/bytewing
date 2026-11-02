@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // DefaultTTL is how long a signed link stays valid.

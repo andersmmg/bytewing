@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/krishna2206/zefile/internal/checksum"
-	"github.com/krishna2206/zefile/internal/quota"
-	"github.com/krishna2206/zefile/internal/storage"
-	"github.com/krishna2206/zefile/internal/upload"
+	"github.com/andersmmg/bytewing/internal/checksum"
+	"github.com/andersmmg/bytewing/internal/quota"
+	"github.com/andersmmg/bytewing/internal/storage"
+	"github.com/andersmmg/bytewing/internal/upload"
 )
 
 const tusVersion = "1.0.0"

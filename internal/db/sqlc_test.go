@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // TestGeneratedQueriesRunAgainstTheSchema is a smoke test for the whole

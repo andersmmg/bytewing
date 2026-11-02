@@ -17,7 +17,7 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // Passkeys (WebAuthn) are offered alongside the password, rather than as
@@ -44,7 +44,7 @@ type Passkeys struct {
 
 func NewPasskeys(rpID, origin string) (*Passkeys, error) {
 	wa, err := webauthn.New(&webauthn.Config{
-		RPDisplayName: "Zefile",
+		RPDisplayName: "ByteWing",
 		RPID:          rpID,
 		RPOrigins:     []string{origin},
 	})

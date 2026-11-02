@@ -183,7 +183,7 @@ func (f *Fetcher) Get(ctx context.Context, rawURL string, offset int64) (*Result
 		cancel()
 		return nil, fmt.Errorf("fetch: %w", err)
 	}
-	req.Header.Set("User-Agent", "zefile")
+	req.Header.Set("User-Agent", "bytewing")
 	if offset > 0 {
 		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
 	}

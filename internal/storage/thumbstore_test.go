@@ -62,7 +62,7 @@ func TestThumbsStayHidden(t *testing.T) {
 			t.Fatalf("listing shows %q", e.Name)
 		}
 	}
-	if _, err := local.Stat(ctx, MustParsePath("/.zefile-thumbs")); !errors.Is(err, ErrReserved) {
+	if _, err := local.Stat(ctx, MustParsePath("/.bytewing-thumbs")); !errors.Is(err, ErrReserved) {
 		t.Fatalf("Stat reserved = %v, want ErrReserved", err)
 	}
 }

@@ -21,8 +21,8 @@ import (
 	"golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
 
-	"github.com/krishna2206/zefile/internal/job"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/job"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // Thumb dimensions: fit within a 256px square, JPEG-encoded.
@@ -235,7 +235,7 @@ func (s *Service) Generate(ctx context.Context, payload job.ThumbPayload) error 
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	tmp, err := os.CreateTemp("", "zefile-thumb-*")
+	tmp, err := os.CreateTemp("", "bytewing-thumb-*")
 	if err != nil {
 		return err
 	}

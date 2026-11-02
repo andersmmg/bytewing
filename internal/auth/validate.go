@@ -25,11 +25,11 @@ const (
 //
 // Not a security control — nothing grants privilege by name — but an account
 // called "admin" on an instance where it is not the administrator, or one
-// called "zefile" appearing to speak for the software, invites the wrong
+// called "bytewing" appearing to speak for the software, invites the wrong
 // assumption.
 var reservedUsernames = map[string]bool{
 	"admin": true, "administrator": true, "root": true, "system": true,
-	"zefile": true, "support": true, "security": true, "api": true,
+	"bytewing": true, "support": true, "security": true, "api": true,
 	"anonymous": true, "guest": true, "nobody": true, "me": true,
 }
 

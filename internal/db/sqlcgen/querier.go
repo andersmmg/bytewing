@@ -74,7 +74,7 @@ type Querier interface {
 	// guessing an id. execrows lets the handler answer 404 when nothing matched.
 	DeleteWebAuthnCredentialForUser(ctx context.Context, arg DeleteWebAuthnCredentialForUserParams) (int64, error)
 	FinishJob(ctx context.Context, arg FinishJobParams) error
-	// The lookup performed on every request that arrives with a zefile_live_ token.
+	// The lookup performed on every request that arrives with a bytewing_live_ token.
 	// Expiry and revocation are filtered here, alongside the account being enabled,
 	// so a caller cannot present a token whose owner has been disabled. A NULL
 	// expires_at means the token never expires.

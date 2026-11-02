@@ -15,35 +15,35 @@ database live:
 
 ```yaml
 environment:
-  ZEFILE_APP_URL: https://zefile.example.tld
-  ZEFILE_DATA_DIR: /data
-  ZEFILE_CONFIG_DIR: /config
+  BYTEWING_APP_URL: https://bytewing.example.tld
+  BYTEWING_DATA_DIR: /data
+  BYTEWING_CONFIG_DIR: /config
 ```
 
-`ZEFILE_CONFIG_DIR` must **not** be inside `ZEFILE_DATA_DIR` — a database users
-can browse is a database they can download, password hashes included. Zefile
+`BYTEWING_CONFIG_DIR` must **not** be inside `BYTEWING_DATA_DIR` — a database users
+can browse is a database they can download, password hashes included. ByteWing
 refuses to start otherwise.
 
 ## Key choices
 
-- **Two origins vs one** — set `ZEFILE_CONTENT_URL` to a second hostname to
+- **Two origins vs one** — set `BYTEWING_CONTENT_URL` to a second hostname to
   enable in-place previews. See [One origin, or two?](/guide/installation#one-origin-or-two).
 - **HTTPS** — session cookies are marked `Secure` automatically when
-  `ZEFILE_APP_URL` uses `https`. A `Secure` cookie sent over plain HTTP is
-  silently dropped by the browser, so always terminate TLS in front of Zefile
+  `BYTEWING_APP_URL` uses `https`. A `Secure` cookie sent over plain HTTP is
+  silently dropped by the browser, so always terminate TLS in front of ByteWing
   in production.
-- **File ownership** — nothing to configure. Zefile adopts whoever owns the data
+- **File ownership** — nothing to configure. ByteWing adopts whoever owns the data
   directory you mount, so a folder you own just works. It will not run as root:
   if the mounted folder is root-owned, `chown` it to any non-root user once.
-- **Storage backend** — local disk by default. `ZEFILE_STORAGE_BACKEND: s3`
-  stores files in S3-compatible object storage instead; then `ZEFILE_DATA_DIR`
-  is unused and `ZEFILE_S3_BUCKET` + `ZEFILE_S3_REGION` are required. Bucket
+- **Storage backend** — local disk by default. `BYTEWING_STORAGE_BACKEND: s3`
+  stores files in S3-compatible object storage instead; then `BYTEWING_DATA_DIR`
+  is unused and `BYTEWING_S3_BUCKET` + `BYTEWING_S3_REGION` are required. Bucket
   setup lives under [Object storage](/guide/deployment).
 
 ## Object storage mode
 
-In S3 mode there is no local disk to fill, so `ZEFILE_RESERVE_BYTES` does
-nothing and `ZEFILE_READ_ONLY` is the only write guard. Features that need the
+In S3 mode there is no local disk to fill, so `BYTEWING_RESERVE_BYTES` does
+nothing and `BYTEWING_READ_ONLY` is the only write guard. Features that need the
 server to read file bytes behave as follows:
 
 | Operation | Local | S3 |

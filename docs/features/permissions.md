@@ -7,7 +7,7 @@ endpoint can open a hole.
 
 ## How a decision is made
 
-For a given path, Zefile walks from the root down to the path, accumulating the
+For a given path, ByteWing walks from the root down to the path, accumulating the
 rules that apply (the user's own and those of their groups). **The most specific
 rule wins**, and an explicit deny always beats an inherited allow.
 

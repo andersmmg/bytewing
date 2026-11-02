@@ -1,4 +1,4 @@
-// Command zefile is a self-hosted file server.
+// Command bytewing is a self-hosted file server.
 package main
 
 import (
@@ -18,27 +18,27 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/acl"
-	"github.com/krishna2206/zefile/internal/api"
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/auth"
-	"github.com/krishna2206/zefile/internal/checksum"
-	"github.com/krishna2206/zefile/internal/color"
-	"github.com/krishna2206/zefile/internal/config"
-	"github.com/krishna2206/zefile/internal/content"
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/fetch"
-	"github.com/krishna2206/zefile/internal/geoip"
-	"github.com/krishna2206/zefile/internal/job"
-	"github.com/krishna2206/zefile/internal/metacache"
-	"github.com/krishna2206/zefile/internal/quota"
-	"github.com/krishna2206/zefile/internal/reference"
-	"github.com/krishna2206/zefile/internal/settings"
-	"github.com/krishna2206/zefile/internal/share"
-	"github.com/krishna2206/zefile/internal/storage"
-	"github.com/krishna2206/zefile/internal/thumb"
-	"github.com/krishna2206/zefile/internal/trash"
-	"github.com/krishna2206/zefile/internal/upload"
+	"github.com/andersmmg/bytewing/internal/acl"
+	"github.com/andersmmg/bytewing/internal/api"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/auth"
+	"github.com/andersmmg/bytewing/internal/checksum"
+	"github.com/andersmmg/bytewing/internal/color"
+	"github.com/andersmmg/bytewing/internal/config"
+	"github.com/andersmmg/bytewing/internal/content"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/fetch"
+	"github.com/andersmmg/bytewing/internal/geoip"
+	"github.com/andersmmg/bytewing/internal/job"
+	"github.com/andersmmg/bytewing/internal/metacache"
+	"github.com/andersmmg/bytewing/internal/quota"
+	"github.com/andersmmg/bytewing/internal/reference"
+	"github.com/andersmmg/bytewing/internal/settings"
+	"github.com/andersmmg/bytewing/internal/share"
+	"github.com/andersmmg/bytewing/internal/storage"
+	"github.com/andersmmg/bytewing/internal/thumb"
+	"github.com/andersmmg/bytewing/internal/trash"
+	"github.com/andersmmg/bytewing/internal/upload"
 )
 
 // version is overridden at build time with -ldflags.
@@ -56,7 +56,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("zefile %s\n", version)
+		fmt.Printf("bytewing %s\n", version)
 		return
 	}
 
@@ -78,19 +78,19 @@ func main() {
 		err = fmt.Errorf("unknown command %q", cmd)
 	}
 	if err != nil {
-		slog.Error("zefile: command failed", "error", err)
+		slog.Error("bytewing: command failed", "error", err)
 		os.Exit(1)
 	}
 }
 
 func usage() {
-	fmt.Fprint(os.Stderr, `zefile — self-hosted file server
+	fmt.Fprint(os.Stderr, `bytewing — self-hosted file server
 
 Usage:
-  zefile [serve]              start the server (default)
-  zefile backup [file]        write a consistent database snapshot
-  zefile restore <file>       replace the database with a snapshot (stop the server first)
-  zefile -version             print the version
+  bytewing [serve]              start the server (default)
+  bytewing backup [file]        write a consistent database snapshot
+  bytewing restore <file>       replace the database with a snapshot (stop the server first)
+  bytewing -version             print the version
 
 backup and restore read `+config.EnvConfigDir+` from the environment.
 `)
@@ -104,7 +104,7 @@ func runBackup(dest string) error {
 		return fmt.Errorf("%s is not set", config.EnvConfigDir)
 	}
 	if dest == "" {
-		dest = filepath.Join(dir, "backups", "zefile-"+time.Now().Format("2006-01-02-150405")+".db")
+		dest = filepath.Join(dir, "backups", "bytewing-"+time.Now().Format("2006-01-02-150405")+".db")
 	}
 
 	if err := db.BackupTo(context.Background(), db.DBPath(dir), dest); err != nil {
@@ -122,7 +122,7 @@ func runBackup(dest string) error {
 // and copies the current database aside before overwriting it.
 func runRestore(src string) error {
 	if src == "" {
-		return errors.New("usage: zefile restore <backup-file>")
+		return errors.New("usage: bytewing restore <backup-file>")
 	}
 	dir := os.Getenv(config.EnvConfigDir)
 	if dir == "" {
@@ -136,7 +136,7 @@ func runRestore(src string) error {
 	if report.PreviousSaved != "" {
 		fmt.Printf("previous database saved to %s\n", report.PreviousSaved)
 	}
-	fmt.Printf("restored %s from %s — restart zefile to use it\n", db.DBPath(dir), src)
+	fmt.Printf("restored %s from %s — restart bytewing to use it\n", db.DBPath(dir), src)
 
 	if len(report.Diverged) > 0 {
 		const show = 20
@@ -246,7 +246,7 @@ func run() error {
 	// back to showing no location. No path is a setting — both are conventions.
 	locator := geoip.Open(
 		filepath.Join(cfg.ConfigDir, "geoip.mmdb"),
-		"/usr/local/share/zefile/geoip.mmdb",
+		"/usr/local/share/bytewing/geoip.mmdb",
 	)
 	defer func() { _ = locator.Close() }()
 	if locator.Enabled() {
@@ -698,7 +698,7 @@ func announceSetup(ctx context.Context, service *auth.Service, cfg config.Config
 	slog.Warn("this instance has no account yet — open the link below to create the administrator",
 		"url", fmt.Sprintf("%s/setup?token=%s", cfg.AppURL, token),
 		"expires_in", auth.DefaultSetupTTL.String(),
-		"note", "this link is replaced every time zefile starts")
+		"note", "this link is replaced every time bytewing starts")
 	return nil
 }
 
@@ -761,7 +761,7 @@ func serve(server *http.Server, cfg config.Config) error {
 
 	failed := make(chan error, 1)
 	go func() {
-		slog.Info("zefile is listening",
+		slog.Info("bytewing is listening",
 			"address", cfg.Listen, "app_url", cfg.AppURL.String(),
 			"data_dir", cfg.DataDir, "version", version)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

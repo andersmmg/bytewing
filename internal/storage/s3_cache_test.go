@@ -388,7 +388,7 @@ func TestS3TrashForgetsAndRestoreInvalidates(t *testing.T) {
 
 	stub := newStubS3()
 	stub.put("trashme.txt", 4)
-	stub.put(".zefile-trash/", 0)
+	stub.put(".bytewing-trash/", 0)
 	s, _ := newCachedTestS3(t, stub, fake)
 
 	id, err := s.Trash(t.Context(), p)

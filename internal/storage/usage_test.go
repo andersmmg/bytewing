@@ -36,9 +36,9 @@ func TestLocalWalkSkipsReserved(t *testing.T) {
 	root := t.TempDir()
 	writeSized(t, filepath.Join(root, "a.bin"), 10)
 	writeSized(t, filepath.Join(root, "sub", "b.bin"), 20)
-	writeSized(t, filepath.Join(root, ".zefile-trash", "gone.bin"), 1000)
-	writeSized(t, filepath.Join(root, ".zefile-thumbs", "x.jpg"), 1000)
-	writeSized(t, filepath.Join(root, ".zefile-uploads", "part"), 1000)
+	writeSized(t, filepath.Join(root, ".bytewing-trash", "gone.bin"), 1000)
+	writeSized(t, filepath.Join(root, ".bytewing-thumbs", "x.jpg"), 1000)
+	writeSized(t, filepath.Join(root, ".bytewing-uploads", "part"), 1000)
 
 	fs := mustOpen(t, Config{Root: root, Reserve: 1})
 	got := collectWalk(t, fs)
@@ -63,11 +63,11 @@ func TestS3WalkSkipsMarkersAndReserved(t *testing.T) {
 	t.Parallel()
 
 	stub := newStubS3()
-	stub.put("docs/", 0)                    // directory marker
-	stub.put("docs/a.bin", 10)              // live file
-	stub.put("docs/sub/b.bin", 20)          // nested live file
-	stub.put(".zefile-trash/gone.bin", 999) // reserved
-	stub.put(".zefile-thumbs/x.jpg", 999)   // reserved
+	stub.put("docs/", 0)                      // directory marker
+	stub.put("docs/a.bin", 10)                // live file
+	stub.put("docs/sub/b.bin", 20)            // nested live file
+	stub.put(".bytewing-trash/gone.bin", 999) // reserved
+	stub.put(".bytewing-thumbs/x.jpg", 999)   // reserved
 	s := newTestS3(t, stub, nil)
 
 	got := collectWalk(t, s)

@@ -14,7 +14,7 @@ import (
 // Params are the Argon2id cost parameters.
 //
 // The defaults follow OWASP's low-memory recommendation rather than its
-// high-memory one. Zefile runs on modest self-hosted machines, and since each
+// high-memory one. ByteWing runs on modest self-hosted machines, and since each
 // concurrent sign-in allocates Memory bytes, a 64 MiB setting would turn the
 // login endpoint into a way to exhaust RAM. Rate limiting narrows that, but
 // choosing a parameter set that is cheap to defend is better than relying on

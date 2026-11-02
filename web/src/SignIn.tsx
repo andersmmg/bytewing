@@ -271,7 +271,7 @@ export function SignIn({ mode, onDone }: Props) {
         <div className="space-y-1 text-center">
           <img src={logoUrl} alt="" className="mx-auto mb-3 h-16 w-auto" />
           <h1 className="font-serif text-4xl font-semibold tracking-tight">
-            Zefile
+            ByteWing
           </h1>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
@@ -304,7 +304,7 @@ export function SignIn({ mode, onDone }: Props) {
                 {setup && (
                   <>
                     <p className="text-sm text-muted-foreground">
-                      Zefile printed a setup link in its log when it started.
+                      ByteWing printed a setup link in its log when it started.
                       Paste its token below.
                     </p>
                     <Field label="Setup token" error={errors.token}>
@@ -473,7 +473,7 @@ function AuthShell({
         <div className="space-y-1 text-center">
           <img src={logoUrl} alt="" className="mx-auto mb-3 h-16 w-auto" />
           <h1 className="font-serif text-4xl font-semibold tracking-tight">
-            Zefile
+            ByteWing
           </h1>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>

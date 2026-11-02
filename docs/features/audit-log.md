@@ -1,6 +1,6 @@
 # Audit log
 
-A multi-user system has to be able to answer "what happened?". Zefile records
+A multi-user system has to be able to answer "what happened?". ByteWing records
 every sensitive action with a timestamp and the account that performed it.
 
 ## What is recorded

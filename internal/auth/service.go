@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // Defaults for a new [Service].

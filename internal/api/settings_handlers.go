@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/settings"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/settings"
 )
 
 // Retention is configured at runtime rather than through the environment, so an

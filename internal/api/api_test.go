@@ -23,22 +23,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/acl"
-	"github.com/krishna2206/zefile/internal/api"
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/auth"
-	"github.com/krishna2206/zefile/internal/checksum"
-	entrycolor "github.com/krishna2206/zefile/internal/color"
-	"github.com/krishna2206/zefile/internal/content"
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/job"
-	"github.com/krishna2206/zefile/internal/quota"
-	"github.com/krishna2206/zefile/internal/reference"
-	"github.com/krishna2206/zefile/internal/share"
-	"github.com/krishna2206/zefile/internal/storage"
-	"github.com/krishna2206/zefile/internal/thumb"
-	"github.com/krishna2206/zefile/internal/trash"
-	"github.com/krishna2206/zefile/internal/upload"
+	"github.com/andersmmg/bytewing/internal/acl"
+	"github.com/andersmmg/bytewing/internal/api"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/auth"
+	"github.com/andersmmg/bytewing/internal/checksum"
+	entrycolor "github.com/andersmmg/bytewing/internal/color"
+	"github.com/andersmmg/bytewing/internal/content"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/job"
+	"github.com/andersmmg/bytewing/internal/quota"
+	"github.com/andersmmg/bytewing/internal/reference"
+	"github.com/andersmmg/bytewing/internal/share"
+	"github.com/andersmmg/bytewing/internal/storage"
+	"github.com/andersmmg/bytewing/internal/thumb"
+	"github.com/andersmmg/bytewing/internal/trash"
+	"github.com/andersmmg/bytewing/internal/upload"
 )
 
 // The tests here drive the server the way a client does: over HTTP, through the
@@ -1396,8 +1396,8 @@ func TestAPITokenAuthenticates(t *testing.T) {
 		return raw
 	}())
 
-	if !strings.HasPrefix(created.Token, "zefile_live_") {
-		t.Fatalf("token %q lacks the zefile_live_ prefix", created.Token)
+	if !strings.HasPrefix(created.Token, "bytewing_live_") {
+		t.Fatalf("token %q lacks the bytewing_live_ prefix", created.Token)
 	}
 	if created.Info.Prefix == "" || strings.Contains(created.Info.Prefix, created.Token[20:]) {
 		t.Fatalf("prefix %q should be a short display fragment, not the full secret", created.Info.Prefix)
@@ -1457,7 +1457,7 @@ func TestAPITokenInvalidIsRejected(t *testing.T) {
 	c := newClient(t)
 	c.setUp()
 
-	c.token = "zefile_live_notarealtoken"
+	c.token = "bytewing_live_notarealtoken"
 	if resp, _ := c.do(http.MethodGet, "/api/v1/fs?path=/", nil); resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("bogus token = %d, want 401", resp.StatusCode)
 	}

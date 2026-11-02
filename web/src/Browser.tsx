@@ -151,7 +151,7 @@ const TYPE_ORDER = [
 ]
 const DATE_ORDER = ['Today', 'Yesterday', 'Earlier this week', 'Earlier this month', 'Older']
 
-const SETTINGS_KEY = 'zefile-view'
+const SETTINGS_KEY = 'bytewing-view'
 
 type Settings = {
   view: View
@@ -251,7 +251,7 @@ const AUTO_REFRESH_MIN_GAP_MS = 5_000
 
 /** MOVE_MIME marks an in-app drag so it is told apart from an OS file drag (an
  *  upload). The payload is the JSON array of paths being moved. */
-const MOVE_MIME = 'application/x-zefile-move'
+const MOVE_MIME = 'application/x-bytewing-move'
 
 /** Clipboard holds entries cut or copied, waiting to be pasted into a folder. */
 type Clipboard = { mode: 'copy' | 'cut'; entries: Entry[] }

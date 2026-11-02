@@ -12,7 +12,7 @@ func TestCookieAttributes(t *testing.T) {
 	t.Parallel()
 
 	for _, secure := range []bool{true, false} {
-		c := SessionCookie("zefile_sess_abc", time.Now().Add(time.Hour), secure)
+		c := SessionCookie("bytewing_sess_abc", time.Now().Add(time.Hour), secure)
 
 		if !c.HttpOnly {
 			t.Error("HttpOnly is not set; a script on the page could read the session")
@@ -39,7 +39,7 @@ func TestClearCookieMatchesSetCookie(t *testing.T) {
 	t.Parallel()
 
 	for _, secure := range []bool{true, false} {
-		set := SessionCookie("zefile_sess_abc", time.Now().Add(time.Hour), secure)
+		set := SessionCookie("bytewing_sess_abc", time.Now().Add(time.Hour), secure)
 		clear := ClearSessionCookie(secure)
 
 		if clear.Name != set.Name {

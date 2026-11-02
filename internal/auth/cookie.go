@@ -8,10 +8,10 @@ import (
 // SessionCookieName is the cookie carrying the session token in a browser.
 //
 // The __Host- prefix is deliberately not used: it requires Secure, forbids a
-// Domain attribute and pins Path to "/", which would make Zefile impossible to
+// Domain attribute and pins Path to "/", which would make ByteWing impossible to
 // run over plain HTTP on a local network during setup. Security comes from the
 // attributes below, which are set on every cookie this package issues.
-const SessionCookieName = "zefile_session"
+const SessionCookieName = "bytewing_session"
 
 // SessionCookie builds the cookie for a freshly created session.
 //
@@ -35,7 +35,7 @@ func SessionCookie(token string, expires time.Time, secure bool) *http.Cookie {
 		HttpOnly: true,
 		Secure:   secure,
 		// Lax rather than Strict: Strict would drop the cookie when someone
-		// follows a link into Zefile from anywhere else, presenting a signed-in
+		// follows a link into ByteWing from anywhere else, presenting a signed-in
 		// user with a login form. Lax still withholds it from cross-site
 		// form posts, which is the case that matters.
 		SameSite: http.SameSiteLaxMode,

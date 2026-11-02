@@ -7,7 +7,7 @@
 
 export type Theme = 'light' | 'dark'
 
-const STORAGE_KEY = 'zefile-theme'
+const STORAGE_KEY = 'bytewing-theme'
 const media = window.matchMedia('(prefers-color-scheme: dark)')
 
 function systemTheme(): Theme {

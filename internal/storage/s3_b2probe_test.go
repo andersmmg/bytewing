@@ -23,13 +23,13 @@ import (
 // delimiter listing, SDK compatibility). Skipped unless the B2 variables are
 // set, so the ordinary suite never needs credentials:
 //
-//	ZEFILE_TEST_B2_ENDPOINT=https://s3.us-west-004.backblazeb2.com \
-//	ZEFILE_TEST_B2_BUCKET=<bucket> \
-//	ZEFILE_TEST_B2_KEY_ID=<application-key-id> \
-//	ZEFILE_TEST_B2_KEY=<application-key> \
+//	BYTEWING_TEST_B2_ENDPOINT=https://s3.us-west-004.backblazeb2.com \
+//	BYTEWING_TEST_B2_BUCKET=<bucket> \
+//	BYTEWING_TEST_B2_KEY_ID=<application-key-id> \
+//	BYTEWING_TEST_B2_KEY=<application-key> \
 //	go test ./internal/storage -run TestS3B2Probe -v
 //
-// ZEFILE_TEST_B2_REGION overrides the signing region, which otherwise comes
+// BYTEWING_TEST_B2_REGION overrides the signing region, which otherwise comes
 // from the endpoint hostname (s3.<region>.backblazeb2.com).
 //
 // Everything lives under one unique prefix per run and is deleted
@@ -45,14 +45,14 @@ type b2probe struct {
 
 func newB2Probe(t *testing.T) *b2probe {
 	t.Helper()
-	endpoint := os.Getenv("ZEFILE_TEST_B2_ENDPOINT")
-	bucket := os.Getenv("ZEFILE_TEST_B2_BUCKET")
-	keyID := os.Getenv("ZEFILE_TEST_B2_KEY_ID")
-	secret := os.Getenv("ZEFILE_TEST_B2_KEY")
+	endpoint := os.Getenv("BYTEWING_TEST_B2_ENDPOINT")
+	bucket := os.Getenv("BYTEWING_TEST_B2_BUCKET")
+	keyID := os.Getenv("BYTEWING_TEST_B2_KEY_ID")
+	secret := os.Getenv("BYTEWING_TEST_B2_KEY")
 	if endpoint == "" || bucket == "" || keyID == "" || secret == "" {
-		t.Skip("ZEFILE_TEST_B2_ENDPOINT/BUCKET/KEY_ID/KEY are not all set; skipping the B2 probe")
+		t.Skip("BYTEWING_TEST_B2_ENDPOINT/BUCKET/KEY_ID/KEY are not all set; skipping the B2 probe")
 	}
-	region := os.Getenv("ZEFILE_TEST_B2_REGION")
+	region := os.Getenv("BYTEWING_TEST_B2_REGION")
 	if region == "" {
 		// s3.<region>.backblazeb2.com — the region signs every request.
 		rest, ok := strings.CutPrefix(strings.TrimPrefix(endpoint, "https://"), "s3.")
@@ -61,13 +61,13 @@ func newB2Probe(t *testing.T) *b2probe {
 		}
 	}
 	if region == "" {
-		t.Fatalf("cannot derive the region from %q; set ZEFILE_TEST_B2_REGION", endpoint)
+		t.Fatalf("cannot derive the region from %q; set BYTEWING_TEST_B2_REGION", endpoint)
 	}
 	cfg := S3Config{
 		Endpoint: endpoint, Region: region, Bucket: bucket,
 		AccessKeyID: keyID, SecretAccessKey: secret,
 		ForcePathStyle: true,
-		Prefix:         "zefile-b2probe",
+		Prefix:         "bytewing-b2probe",
 	}
 	s, err := OpenS3(cfg)
 	if err != nil {
@@ -84,7 +84,7 @@ func (p *b2probe) ctx() context.Context { return context.Background() }
 // key seeds an object under the run prefix and reports its key.
 func (p *b2probe) key(t *testing.T, name string, body []byte) string {
 	t.Helper()
-	k := "zefile-b2probe/" + name
+	k := "bytewing-b2probe/" + name
 	_, err := p.backend.client.PutObject(p.ctx(), &awss3.PutObjectInput{
 		Bucket: aws.String(p.bucket), Key: aws.String(k), Body: bytes.NewReader(body),
 	})
@@ -99,7 +99,7 @@ func (p *b2probe) cleanup() {
 	var token *string
 	for {
 		out, err := p.backend.client.ListObjectsV2(ctx, &awss3.ListObjectsV2Input{
-			Bucket: aws.String(p.bucket), Prefix: aws.String("zefile-b2probe/"),
+			Bucket: aws.String(p.bucket), Prefix: aws.String("bytewing-b2probe/"),
 			ContinuationToken: token,
 		})
 		if err != nil {
@@ -113,7 +113,7 @@ func (p *b2probe) cleanup() {
 		}
 
 		uploads, err := p.backend.client.ListMultipartUploads(ctx, &awss3.ListMultipartUploadsInput{
-			Bucket: aws.String(p.bucket), Prefix: aws.String("zefile-b2probe/"),
+			Bucket: aws.String(p.bucket), Prefix: aws.String("bytewing-b2probe/"),
 		})
 		if err == nil {
 			for _, up := range uploads.Uploads {
@@ -173,7 +173,7 @@ func TestS3B2ProbeDispositionOverride(t *testing.T) {
 	}
 
 	// Same question for the content type.
-	typeKey := "zefile-b2probe/disp/typed.bin"
+	typeKey := "bytewing-b2probe/disp/typed.bin"
 	_, err = p.backend.client.PutObject(ctx, &awss3.PutObjectInput{
 		Bucket: aws.String(p.bucket), Key: aws.String(typeKey),
 		Body: bytes.NewReader([]byte("x")), ContentType: aws.String("application/octet-stream"),
@@ -205,7 +205,7 @@ func TestS3B2ProbeDispositionOverride(t *testing.T) {
 func TestS3B2ProbeStoredMetadata(t *testing.T) {
 	p := newB2Probe(t)
 	ctx := p.ctx()
-	k := "zefile-b2probe/meta/file.bin"
+	k := "bytewing-b2probe/meta/file.bin"
 	_, err := p.backend.client.PutObject(ctx, &awss3.PutObjectInput{
 		Bucket: aws.String(p.bucket), Key: aws.String(k), Body: bytes.NewReader([]byte("meta")),
 		ContentType: aws.String("image/png"), ContentDisposition: aws.String("attachment; filename=\"f.png\""),
@@ -235,7 +235,7 @@ func TestS3B2ProbeStoredMetadata(t *testing.T) {
 func TestS3B2ProbeConditionalWrite(t *testing.T) {
 	p := newB2Probe(t)
 	ctx := p.ctx()
-	k := "zefile-b2probe/cond/file.bin"
+	k := "bytewing-b2probe/cond/file.bin"
 
 	_, err := p.backend.client.PutObject(ctx, &awss3.PutObjectInput{
 		Bucket: aws.String(p.bucket), Key: aws.String(k),
@@ -267,7 +267,7 @@ func TestS3B2ProbeConditionalWrite(t *testing.T) {
 func TestS3B2ProbePartChecksum(t *testing.T) {
 	p := newB2Probe(t)
 	ctx := p.ctx()
-	k := "zefile-b2probe/sum/parts.bin"
+	k := "bytewing-b2probe/sum/parts.bin"
 
 	up, err := p.backend.client.CreateMultipartUpload(ctx, &awss3.CreateMultipartUploadInput{
 		Bucket: aws.String(p.bucket), Key: aws.String(k),
@@ -363,9 +363,9 @@ func TestS3B2ProbeServerSideCopy(t *testing.T) {
 	if err := s.Mkdir(ctx, MustParsePath("/cp")); err != nil {
 		t.Fatalf("Mkdir: %v", err)
 	}
-	marker := "zefile-b2probe/cp/"
+	marker := "bytewing-b2probe/cp/"
 	_, err := s.client.CopyObject(ctx, &awss3.CopyObjectInput{
-		Bucket: aws.String(p.bucket), Key: aws.String("zefile-b2probe/cp-copy/"),
+		Bucket: aws.String(p.bucket), Key: aws.String("bytewing-b2probe/cp-copy/"),
 		CopySource: aws.String(s.copySource(marker)),
 	})
 	if err != nil {
@@ -375,7 +375,7 @@ func TestS3B2ProbeServerSideCopy(t *testing.T) {
 	}
 
 	src := p.key(t, "cp/big.bin", bytes.Repeat([]byte("partcopy "), 1<<12))
-	dst := "zefile-b2probe/cp/big-copy.bin"
+	dst := "bytewing-b2probe/cp/big-copy.bin"
 	up, err := s.client.CreateMultipartUpload(ctx, &awss3.CreateMultipartUploadInput{
 		Bucket: aws.String(p.bucket), Key: aws.String(dst),
 	})
@@ -411,13 +411,13 @@ func TestS3B2ProbeObjectChecksum(t *testing.T) {
 	p := newB2Probe(t)
 	ctx := p.ctx()
 	s := p.backend
-	body := []byte("zefile whole-object checksum probe")
+	body := []byte("bytewing whole-object checksum probe")
 	sum := sha256.Sum256(body)
 	wantB64 := base64.StdEncoding.EncodeToString(sum[:])
 	wantHex := hex.EncodeToString(sum[:])
 
 	// §9.6a: PutObject with the algorithm — accepted, stored, returned.
-	k := "zefile-b2probe/sum/put.bin"
+	k := "bytewing-b2probe/sum/put.bin"
 	_, err := s.client.PutObject(ctx, &awss3.PutObjectInput{
 		Bucket: aws.String(p.bucket), Key: aws.String(k),
 		Body: bytes.NewReader(body), ChecksumAlgorithm: types.ChecksumAlgorithmSha256,
@@ -497,12 +497,12 @@ func TestS3B2ProbeMultipartChecksum(t *testing.T) {
 	p := newB2Probe(t)
 	ctx := p.ctx()
 	s := p.backend
-	body := []byte("zefile multipart checksum probe")
+	body := []byte("bytewing multipart checksum probe")
 	sum := sha256.Sum256(body)
 	wantB64 := base64.StdEncoding.EncodeToString(sum[:])
 
 	probe := func(name string, createChecksum, partChecksum bool, typ types.ChecksumType) {
-		k := "zefile-b2probe/" + name + ".bin"
+		k := "bytewing-b2probe/" + name + ".bin"
 		in := &awss3.CreateMultipartUploadInput{
 			Bucket: aws.String(p.bucket), Key: aws.String(k),
 		}

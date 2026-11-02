@@ -1,6 +1,6 @@
 # Users & groups
 
-Zefile is multi-user from the ground up. Accounts are created by invitation, and
+ByteWing is multi-user from the ground up. Accounts are created by invitation, and
 access is granted to a user or to a whole group.
 
 ## Inviting users
@@ -44,7 +44,7 @@ their own grants and those of every group they belong to. See
 ## Two-factor authentication
 
 Each user can add a second factor from **Settings → Two-factor authentication**.
-Zefile uses **TOTP** (the six-digit codes from apps like Google Authenticator,
+ByteWing uses **TOTP** (the six-digit codes from apps like Google Authenticator,
 Aegis or 1Password): scan the QR code once, confirm with a code, and from then on
 sign-in asks for a code after the password. Verification is offline — no SMS, no
 email.
@@ -69,7 +69,7 @@ added, or removed, without one.
 
 ## Forgotten passwords
 
-Zefile never sends email, so password reset works with **recovery codes**
+ByteWing never sends email, so password reset works with **recovery codes**
 instead. When an account is created, it is shown a set of ten single-use codes
 to save. To reset a forgotten password, use **Forgot your password?** on the
 sign-in screen: a username and one recovery code set a new password, and every

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/public/logo.png" alt="Zefile" width="128">
+  <img src="docs/public/logo.png" alt="ByteWing" width="128">
 </p>
 
-<h1 align="center">Zefile</h1>
+<h1 align="center">ByteWing</h1>
 
-<p align="center"><em>Because it's not just another file browser — it's <b>Ze</b> file browser.</em></p>
+<p align="center"><em>Because it's not just another file browser.</em></p>
 
 A self-hosted file server in a single binary. Store, organise and share large files
 on your own server, with a security model and an API designed in from the start.
@@ -12,7 +12,7 @@ on your own server, with a security model and an API designed in from the start.
 ---
 
 > [!NOTE]
-> **Zefile is young (0.x) but working.** A live instance serves the author's files
+> **ByteWing is young (0.x) but working.** A live instance serves the author's files
 > in production. The data model is stable; expect the occasional rough edge and
 > watch the releases for breaking changes, which land only on a minor bump while
 > 0.x.
@@ -25,7 +25,7 @@ on your own server, with a security model and an API designed in from the start.
 Its author explained clearly why it could not be fixed by patching: written without a security
 model or API design, it would need a rewrite. Known vulnerabilities remain public and unfixed.
 
-Zefile is that rewrite — a new project, not a fork. Nothing is inherited from the original
+ByteWing is that rewrite — a new project, not a fork. Nothing is inherited from the original
 codebase except the lessons it documented.
 
 ## What it does
@@ -97,7 +97,7 @@ Stated plainly so nobody has to ask:
 - No plugin marketplace
 - No bidirectional desktop sync client
 
-Zefile aims to be the File Browser that should have existed, not a Nextcloud alternative.
+ByteWing aims to be the File Browser that should have existed, not a Nextcloud alternative.
 
 ## Stack
 
@@ -108,7 +108,7 @@ React 19 + Vite · [shadcn/ui](https://ui.shadcn.com/) (Radix + Tailwind CSS 4) 
 ## Documentation
 
 Full documentation — installation, configuration, features and the API — lives at
-**[krishna2206.github.io/zefile](https://krishna2206.github.io/zefile/)**. The
+**[andersmmg.github.io/bytewing](https://andersmmg.github.io/bytewing/)**. The
 source is in [`docs/`](docs/) ([VitePress](https://vitepress.dev)); build it
 locally with `cd docs && pnpm install && pnpm dev`.
 
@@ -117,12 +117,12 @@ interface — are kept in [`docs/design/`](docs/design/).
 
 ## Deploying
 
-Zefile ships as a container image. The compose file builds it from source, which
+ByteWing ships as a container image. The compose file builds it from source, which
 is what a self-hosted instance usually wants:
 
 ```sh
 docker compose -f deploy/docker-compose.build.yml up -d
-docker compose -f deploy/docker-compose.build.yml logs zefile
+docker compose -f deploy/docker-compose.build.yml logs bytewing
 ```
 
 The log prints a one-time setup link. Open it to create the administrator.
@@ -131,20 +131,20 @@ The log prints a one-time setup link. Open it to create the administrator.
 instance is compromised between deployment and the moment someone remembers to
 change them, and scanners know the default of every self-hosted project. The
 setup link is single-use, expires in 24 hours, and is replaced every time
-Zefile starts — so one printed into a log you have since rotated away stops
+ByteWing starts — so one printed into a log you have since rotated away stops
 being useful.
 
 Two things decide whether a deployment works:
 
 |                      |                                                                                                                                                                                                                                                                                                                                    |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ZEFILE_CONFIG_DIR`  | Must not sit inside `ZEFILE_DATA_DIR`. Zefile refuses to start otherwise: a database users can list is one they can download, password hashes included.                                                                                                                                                                            |
-| `ZEFILE_CONTENT_URL` | A second hostname. Without it, user content is served from the application origin and Zefile hardens itself — every file becomes an attachment and nothing renders in place. On the object-storage backend this degradation does not apply: downloads are presigned redirects to the store's own origin, so previews keep working. |
+| `BYTEWING_CONFIG_DIR`  | Must not sit inside `BYTEWING_DATA_DIR`. ByteWing refuses to start otherwise: a database users can list is one they can download, password hashes included.                                                                                                                                                                            |
+| `BYTEWING_CONTENT_URL` | A second hostname. Without it, user content is served from the application origin and ByteWing hardens itself — every file becomes an attachment and nothing renders in place. On the object-storage backend this degradation does not apply: downloads are presigned redirects to the store's own origin, so previews keep working. |
 
-There are **no `PUID`/`PGID` to set**. Zefile adopts whoever owns the data
+There are **no `PUID`/`PGID` to set**. ByteWing adopts whoever owns the data
 directory you mount, so a folder you own just works. The one exception: it will
 not run as root — if the mounted folder is owned by root, `chown` it to any
-non-root user once and Zefile follows.
+non-root user once and ByteWing follows.
 
 ## Building
 

@@ -12,8 +12,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/krishna2206/zefile/internal/auth"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/auth"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // Problem is an error response in the shape of RFC 9457.
@@ -71,7 +71,7 @@ const (
 
 // problemTypeBase namespaces the type URIs. They are documentation links, not
 // endpoints, which is why they point at the repository rather than the API.
-const problemTypeBase = "https://github.com/krishna2206/zefile/blob/main/docs/errors.md#"
+const problemTypeBase = "https://github.com/andersmmg/bytewing/blob/main/docs/errors.md#"
 
 // writeProblem sends an error response.
 func writeProblem(w http.ResponseWriter, r *http.Request, status int, code, title, detail string) {

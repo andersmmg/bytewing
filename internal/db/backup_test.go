@@ -94,13 +94,13 @@ func TestRestoreReportsDivergenceFromDisk(t *testing.T) {
 	}
 }
 
-func TestRestoreRejectsNonZefileDatabase(t *testing.T) {
+func TestRestoreRejectsNonByteWingDatabase(t *testing.T) {
 	bogus := filepath.Join(t.TempDir(), "bogus.db")
 	if err := os.WriteFile(bogus, []byte("not a database"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := RestoreFrom(t.Context(), t.TempDir(), "", bogus); err == nil {
-		t.Fatal("expected RestoreFrom to reject a file that is not a Zefile database")
+		t.Fatal("expected RestoreFrom to reject a file that is not a ByteWing database")
 	}
 }
 

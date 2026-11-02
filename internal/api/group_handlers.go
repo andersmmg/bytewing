@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/krishna2206/zefile/internal/acl"
-	"github.com/krishna2206/zefile/internal/audit"
+	"github.com/andersmmg/bytewing/internal/acl"
+	"github.com/andersmmg/bytewing/internal/audit"
 )
 
 type groupResponse struct {

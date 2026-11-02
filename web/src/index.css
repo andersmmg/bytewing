@@ -7,7 +7,7 @@
  * one signal. */
 @custom-variant dark (&:is(.dark *));
 
-/* Zefile's palette, calculated from one colour.
+/* ByteWing's palette, calculated from one colour.
  *
  * All color tokens are derived from a single seed color (--seed) using
  perceptually accurate mixing (via oklch), destructive red remains */

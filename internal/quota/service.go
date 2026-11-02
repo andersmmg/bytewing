@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 const snapshotTTL = time.Minute

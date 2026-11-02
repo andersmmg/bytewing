@@ -17,9 +17,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/krishna2206/zefile/internal/content"
-	"github.com/krishna2206/zefile/internal/share"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/content"
+	"github.com/andersmmg/bytewing/internal/share"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // fakeShares stands in for the share service: one canned grant or one error.
@@ -47,7 +47,7 @@ func TestSharePublicDownload(t *testing.T) {
 	})
 	f.write(t, "shared.txt", []byte("hello share"))
 
-	resp := f.get(t, f.server.URL+"/s/zefile_shr_token", nil)
+	resp := f.get(t, f.server.URL+"/s/bytewing_shr_token", nil)
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("share download = %d, want 200", resp.StatusCode)

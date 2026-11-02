@@ -10,5 +10,5 @@ or **purge** it to delete it permanently. Emptying the trash removes everything
 in it.
 
 Trash is also purged automatically, alongside abandoned upload fragments, when
-the disk approaches its [reserve threshold](/reference/environment#zefile-reserve-bytes)
+the disk approaches its [reserve threshold](/reference/environment#bytewing-reserve-bytes)
 — reclaiming space is preferred to letting the service go read-only.

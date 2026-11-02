@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // Two-factor authentication uses TOTP (RFC 6238): the server and an
@@ -27,7 +27,7 @@ const (
 	totpSecretBytes = 20 // 160-bit secret, the RFC 6238 recommendation
 
 	// TOTPIssuer labels the account in the authenticator app.
-	TOTPIssuer = "Zefile"
+	TOTPIssuer = "ByteWing"
 )
 
 // totpEncoding is unpadded base32, the encoding authenticator apps expect for a

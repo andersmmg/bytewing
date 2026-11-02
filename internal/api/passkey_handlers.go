@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/auth"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/auth"
 )
 
 // Passkeys (WebAuthn) are offered alongside the password, rather than as

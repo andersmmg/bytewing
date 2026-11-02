@@ -125,17 +125,17 @@ jobs:
           context: .
           push: false
           load: true
-          tags: zefile:ci
+          tags: bytewing:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Smoke test the image
         run: |
           set -eu
           mkdir -p /tmp/data
-          docker run -d --name zefile \
-            -e ZEFILE_APP_URL=http://localhost:8080 \
+          docker run -d --name bytewing \
+            -e BYTEWING_APP_URL=http://localhost:8080 \
             -v /tmp/data:/data \
-            -p 8080:8080 zefile:ci
+            -p 8080:8080 bytewing:ci
 
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; then
@@ -143,18 +143,18 @@ jobs:
               break
             fi
             if [ "$i" = "30" ]; then
-              echo "never became healthy"; docker logs zefile; exit 1
+              echo "never became healthy"; docker logs bytewing; exit 1
             fi
             sleep 1
           done
 
           # An instance with no account must announce a setup link rather than
           # create a default administrator.
-          docker logs zefile 2>&1 | grep -q "no account yet" \
-            || { echo "no setup link was announced"; docker logs zefile; exit 1; }
+          docker logs bytewing 2>&1 | grep -q "no account yet" \
+            || { echo "no setup link was announced"; docker logs bytewing; exit 1; }
 
           # And it must not be reachable without signing in.
           code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/fs)
           [ "$code" = "401" ] || { echo "unauthenticated listing returned $code"; exit 1; }
 
-          docker rm -f zefile
+          docker rm -f bytewing

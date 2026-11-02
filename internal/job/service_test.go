@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db"
+	"github.com/andersmmg/bytewing/internal/db"
 )
 
 func newService(t *testing.T) *Service {

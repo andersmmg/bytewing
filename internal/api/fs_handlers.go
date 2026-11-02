@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/acl"
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/color"
-	"github.com/krishna2206/zefile/internal/content"
-	"github.com/krishna2206/zefile/internal/job"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/acl"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/color"
+	"github.com/andersmmg/bytewing/internal/content"
+	"github.com/andersmmg/bytewing/internal/job"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 type entryResponse struct {
@@ -892,7 +892,7 @@ func bundleName(paths []storage.Path) string {
 	if len(paths) == 1 {
 		return paths[0].Name() + ".zip"
 	}
-	return "zefile.zip"
+	return "bytewing.zip"
 }
 
 type textResponse struct {

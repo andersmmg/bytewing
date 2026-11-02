@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // ScopeFull is the only scope for now: a token acts with the full authority of
@@ -67,7 +67,7 @@ func (s *Service) CreateAPIToken(ctx context.Context, userID int64, name string,
 	return token, toAPIToken(row), nil
 }
 
-// LookupAPIToken resolves a zefile_live_ token to its owner, applying the same
+// LookupAPIToken resolves a bytewing_live_ token to its owner, applying the same
 // expiry, revocation and account-enabled filters as a session lookup.
 func (s *Service) LookupAPIToken(ctx context.Context, token string) (APIToken, User, error) {
 	row, err := s.reads.GetAPITokenByHash(ctx, sqlcgen.GetAPITokenByHashParams{

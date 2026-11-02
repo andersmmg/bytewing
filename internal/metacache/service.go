@@ -24,8 +24,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // Service mirrors file metadata into the file_cache and meta_sync tables.

@@ -20,7 +20,7 @@ import (
 
 var _ Trasher = (*S3)(nil)
 
-// trashPrefix is where trashed entries park: <prefix>/.zefile-trash/<id>/…
+// trashPrefix is where trashed entries park: <prefix>/.bytewing-trash/<id>/…
 func (s *S3) trashPrefix() string {
 	if s.prefix == "" {
 		return TrashDir + "/"

@@ -52,7 +52,7 @@ func TestValidateUsername(t *testing.T) {
 		{"newline", "kri\nshna"},
 		{"reserved", "admin"},
 		{"reserved in another case", "ADMIN"},
-		{"reserved product name", "zefile"},
+		{"reserved product name", "bytewing"},
 	}
 	for _, tc := range rejected {
 		t.Run("rejected/"+tc.name, func(t *testing.T) {

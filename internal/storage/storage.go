@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Reserved directory names at the top of the storage tree. They hold Zefile's
+// Reserved directory names at the top of the storage tree. They hold ByteWing's
 // own working data and are hidden from listings and refused to callers.
 //
 // They live inside the storage root rather than beside it because deleting a
@@ -15,9 +15,9 @@ import (
 // within one filesystem. The same applies to in-flight uploads, which are moved
 // into place on completion.
 const (
-	TrashDir   = ".zefile-trash"
-	UploadsDir = ".zefile-uploads"
-	ThumbsDir  = ".zefile-thumbs"
+	TrashDir   = ".bytewing-trash"
+	UploadsDir = ".bytewing-uploads"
+	ThumbsDir  = ".bytewing-thumbs"
 )
 
 // DefaultReserve is the free space kept in hand by default.

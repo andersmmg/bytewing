@@ -7,8 +7,8 @@ import (
 	"context"
 	"slices"
 
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // Presets is the palette, in the order the menu offers it. Ids are stable:

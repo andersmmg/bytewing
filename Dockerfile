@@ -27,7 +27,7 @@ ARG TARGETOS TARGETARCH VERSION=
 # instance still reports the version it was built at rather than "dev".
 RUN VERSION="${VERSION:-v$(cat version.txt 2>/dev/null || echo 0.0.0)}" && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/zefile ./cmd/zefile
+    go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/bytewing ./cmd/bytewing
 
 # The offline IP-to-place database for the sessions screen, fetched at build
 # time — never at runtime — from DB-IP's free City Lite dataset (CC-BY 4.0). The
@@ -54,17 +54,17 @@ RUN set -eu; \
 # did not choose, which is the first thing that goes wrong in self-hosting.
 FROM alpine:3.21
 RUN apk add --no-cache su-exec tzdata ca-certificates ffmpeg && \
-    addgroup -g 1000 zefile && \
-    adduser -D -u 1000 -G zefile zefile
+    addgroup -g 1000 bytewing && \
+    adduser -D -u 1000 -G bytewing bytewing
 
-COPY --from=build /out/zefile /usr/local/bin/zefile
-COPY --from=geoip /geoip /usr/local/share/zefile
+COPY --from=build /out/bytewing /usr/local/bin/bytewing
+COPY --from=geoip /geoip /usr/local/share/bytewing
 COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-ENV ZEFILE_DATA_DIR=/data \
-    ZEFILE_CONFIG_DIR=/config \
-    ZEFILE_LISTEN=:8080
+ENV BYTEWING_DATA_DIR=/data \
+    BYTEWING_CONFIG_DIR=/config \
+    BYTEWING_LISTEN=:8080
 VOLUME ["/data", "/config"]
 EXPOSE 8080
 
@@ -74,4 +74,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["zefile"]
+CMD ["bytewing"]

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/auth"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/auth"
 )
 
 type invitationResponse struct {

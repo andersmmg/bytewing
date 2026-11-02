@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/krishna2206/zefile/internal/audit"
-	"github.com/krishna2206/zefile/internal/storage"
-	"github.com/krishna2206/zefile/internal/trash"
+	"github.com/andersmmg/bytewing/internal/audit"
+	"github.com/andersmmg/bytewing/internal/storage"
+	"github.com/andersmmg/bytewing/internal/trash"
 )
 
 type trashItemResponse struct {

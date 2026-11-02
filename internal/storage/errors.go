@@ -10,7 +10,7 @@ var (
 	// contained a traversal component, or used bytes a name may not contain.
 	ErrInvalidPath = errors.New("storage: invalid path")
 
-	// ErrReserved means the path targets a directory Zefile keeps for itself,
+	// ErrReserved means the path targets a directory ByteWing keeps for itself,
 	// such as the trash or in-flight uploads.
 	ErrReserved = errors.New("storage: reserved path")
 

@@ -13,10 +13,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/auth"
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/auth"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // readPerm is acl.PermRead. It is written as a literal rather than imported
@@ -135,7 +135,7 @@ func (s *Service) Create(ctx context.Context, ownerID int64, p storage.Path, opt
 	}
 
 	// No prefix: a share token lives in a URL people paste and read, not in a
-	// repository a secret scanner combs, so the "zefile_shr_" tag only made the
+	// repository a secret scanner combs, so the "bytewing_shr_" tag only made the
 	// link longer. The random part still carries the full 256 bits.
 	token, hash, err := auth.NewToken("")
 	if err != nil {

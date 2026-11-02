@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: Zefile
+  name: ByteWing
   text: The file server that should have existed
   tagline: A self-hosted, single-binary file server. Fast transfers, real permissions, sessions that actually end. Apache-2.0.
   actions:
@@ -14,7 +14,7 @@ hero:
       link: /guide/introduction
     - theme: alt
       text: View on GitHub
-      link: https://github.com/krishna2206/zefile
+      link: https://github.com/andersmmg/bytewing
 
 features:
   - title: One binary

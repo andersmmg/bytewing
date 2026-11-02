@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 type mapOwners map[string]int64
@@ -47,8 +47,8 @@ func TestSnapshotAttributesOwners(t *testing.T) {
 	seed(t, root, "a.bin", 100)
 	seed(t, root, "sub/b.bin", 50)
 	seed(t, root, "loose.bin", 25)
-	seed(t, root, ".zefile-trash/gone.bin", 1000)
-	seed(t, root, ".zefile-thumbs/deadbeef.jpg", 1000)
+	seed(t, root, ".bytewing-trash/gone.bin", 1000)
+	seed(t, root, ".bytewing-thumbs/deadbeef.jpg", 1000)
 
 	fs := openLocal(t, root)
 	svc := New(fs, 0, mapOwners{"/a.bin": 1, "/sub/b.bin": 2, "/missing.bin": 3}, mapQuotas{})

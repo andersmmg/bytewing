@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/share"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/share"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // SubjectLoader turns an account identifier into a context carrying its
@@ -182,7 +182,7 @@ func (s *Server) handleZip(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 	if name == "" {
-		name = "zefile.zip"
+		name = "bytewing.zip"
 	}
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -410,7 +410,7 @@ func withinShare(root, target storage.Path) bool {
 const unlockFormHTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Protected file · Zefile</title>
+<title>Protected file · ByteWing</title>
 <style>
 :root{color-scheme:light dark}
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f5f2;
@@ -463,7 +463,7 @@ var browseTmpl = template.Must(template.New("browse").Parse(browseHTML))
 const browseHTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{.Title}} · Zefile</title>
+<title>{{.Title}} · ByteWing</title>
 <style>
 :root{color-scheme:light dark}
 body{margin:0;background:#f4f5f2;color:#1a1c1b;

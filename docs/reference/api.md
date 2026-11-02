@@ -16,16 +16,16 @@ Three ways in resolve to the same user:
   authenticator, and posts the assertion to
   `POST /api/v1/auth/passkey/login`, which sets the same cookie.
 - **Bearer token** — a program sends an [API token](/reference/api-tokens) as
-  `Authorization: Bearer zefile_live_…`. This is what scripts and integrations
+  `Authorization: Bearer bytewing_live_…`. This is what scripts and integrations
   use.
 
 A token acts with the full authority of the account that created it. Every path
 traverses exactly the same permission checks.
 
 ```sh
-TOKEN=zefile_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TOKEN=bytewing_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 curl -H "Authorization: Bearer $TOKEN" \
-  "https://zefile.example.tld/api/v1/fs?path=/"
+  "https://bytewing.example.tld/api/v1/fs?path=/"
 ```
 
 ## Errors
@@ -77,7 +77,7 @@ Field-level validation errors add an `errors` map of field name to message.
 | `POST`   | `/api/v1/fs/move`           | Move or rename                                                                                                       |
 | `POST`   | `/api/v1/fs/copy`           | Copy (large copies run as a background job)                                                                          |
 | `POST`   | `/api/v1/fs/extract`        | Extract a ZIP into a new folder (background job) — `{ "archive": "/x.zip" }`                                         |
-| `POST`   | `/api/v1/fs/fetch`          | Download a URL into a folder (background job) — `{ "url": "https://…", "dir": "/" }`; needs `ZEFILE_ALLOW_URL_FETCH` |
+| `POST`   | `/api/v1/fs/fetch`          | Download a URL into a folder (background job) — `{ "url": "https://…", "dir": "/" }`; needs `BYTEWING_ALLOW_URL_FETCH` |
 | `DELETE` | `/api/v1/fs?path=`          | Move to trash                                                                                                        |
 | `GET`    | `/api/v1/fs/link?path=`     | Mint a short-lived signed download URL                                                                               |
 | `GET`    | `/api/v1/fs/text?path=`     | Read a text file (capped at 2 MiB)                                                                                   |

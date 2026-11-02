@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/krishna2206/zefile/internal/checksum"
-	"github.com/krishna2206/zefile/internal/job"
+	"github.com/andersmmg/bytewing/internal/checksum"
+	"github.com/andersmmg/bytewing/internal/job"
 )
 
 type checksumResponse struct {

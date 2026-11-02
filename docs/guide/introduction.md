@@ -1,6 +1,6 @@
 # Introduction
 
-Zefile is a self-hosted file server: a single binary that serves a directory of
+ByteWing is a self-hosted file server: a single binary that serves a directory of
 files over a clean web interface and a JSON API. It aims to be **the File
 Browser that should have existed** — not a Nextcloud or Google Drive
 replacement.
@@ -10,7 +10,7 @@ replacement.
 [File Browser](https://github.com/filebrowser/filebrowser) proved that a
 single-binary file server is the right shape. But it carries a few defects its
 own maintainer has acknowledged: JWT sessions that cannot be revoked, slow
-downloads, and a permission model that is easy to bypass. Zefile keeps the shape
+downloads, and a permission model that is easy to bypass. ByteWing keeps the shape
 and fixes the foundation:
 
 - **Sessions that actually end.** Opaque server-side tokens, checked in the
@@ -43,7 +43,7 @@ Stated plainly so nobody has to ask:
 
 ## Next steps
 
-- [Install Zefile](/guide/installation) with Docker Compose
+- [Install ByteWing](/guide/installation) with Docker Compose
 - Review the [configuration](/guide/configuration) and
   [environment variables](/reference/environment)
 - Read about [permissions](/features/permissions) and [sharing](/features/sharing)

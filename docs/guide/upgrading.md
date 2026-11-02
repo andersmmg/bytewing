@@ -1,6 +1,6 @@
 # Upgrading
 
-Zefile follows [semantic versioning](https://semver.org). While it is below
+ByteWing follows [semantic versioning](https://semver.org). While it is below
 `1.0`, a minor bump (`0.5 → 0.6`) may contain new features and, occasionally, a
 breaking change called out in the release notes.
 
@@ -16,12 +16,12 @@ docker compose up -d
 If you pinned a version tag, bump it first:
 
 ```yaml
-image: ghcr.io/krishna2206/zefile:v0.8.0
+image: ghcr.io/andersmmg/bytewing:v0.8.0
 ```
 
 ## Database migrations
 
-Schema migrations run automatically at startup. Zefile takes an automatic
+Schema migrations run automatically at startup. ByteWing takes an automatic
 snapshot of the database before applying one, so an interrupted upgrade does not
 leave a half-migrated database.
 
@@ -36,5 +36,5 @@ The version is shown in the sidebar of the interface, and returned by the
 public config endpoint:
 
 ```sh
-curl https://zefile.example.tld/api/v1/config
+curl https://bytewing.example.tld/api/v1/config
 ```

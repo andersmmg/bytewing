@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 func TestValidHash(t *testing.T) {

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/storage"
-	"github.com/krishna2206/zefile/internal/upload"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/storage"
+	"github.com/andersmmg/bytewing/internal/upload"
 )
 
 // directFake is an in-memory DirectStager plus the Stat half of Store: it

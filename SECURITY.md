@@ -2,13 +2,13 @@
 
 ## Current status
 
-Zefile is in early development. **There is no release, and no version is supported for
+ByteWing is in early development. **There is no release, and no version is supported for
 production use.** Do not deploy it and do not expose it to the internet.
 
 ## Reporting a vulnerability
 
 Report privately through
-[GitHub Security Advisories](https://github.com/krishna2206/zefile/security/advisories/new).
+[GitHub Security Advisories](https://github.com/andersmmg/bytewing/security/advisories/new).
 Please do not open a public issue for a security problem.
 
 Include what you can: affected component, reproduction steps, and impact. A proof of concept
@@ -25,11 +25,11 @@ directory traversal, share links, server-side tasks (URL fetch, archive extracti
 and content-origin isolation.
 
 Out of scope: anything requiring an already-compromised host, denial of service through
-legitimate resource use, and findings in dependencies that do not affect Zefile as used.
+legitimate resource use, and findings in dependencies that do not affect ByteWing as used.
 
 ## Design commitments
 
-These are properties Zefile intends to hold. A report showing any of them broken is a
+These are properties ByteWing intends to hold. A report showing any of them broken is a
 vulnerability, even if nothing else looks wrong:
 
 - Logging out invalidates the session token immediately and irreversibly.

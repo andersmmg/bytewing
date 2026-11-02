@@ -182,7 +182,7 @@ func TestDefaultParamsAreDeliberate(t *testing.T) {
 	t.Parallel()
 
 	// OWASP's low-memory recommendation, chosen because each concurrent sign-in
-	// allocates Memory bytes and Zefile runs on small machines.
+	// allocates Memory bytes and ByteWing runs on small machines.
 	if DefaultParams.Memory < 19*1024 {
 		t.Errorf("Memory = %d KiB, below the 19 MiB floor", DefaultParams.Memory)
 	}

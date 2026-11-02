@@ -8,8 +8,8 @@ before:
     - make web
 
 builds:
-  - main: ./cmd/zefile
-    binary: zefile
+  - main: ./cmd/bytewing
+    binary: bytewing
     env:
       - CGO_ENABLED=0
     flags:

@@ -72,7 +72,7 @@ type GetAPITokenByHashRow struct {
 	User     User
 }
 
-// The lookup performed on every request that arrives with a zefile_live_ token.
+// The lookup performed on every request that arrives with a bytewing_live_ token.
 // Expiry and revocation are filtered here, alongside the account being enabled,
 // so a caller cannot present a token whose owner has been disabled. A NULL
 // expires_at means the token never expires.

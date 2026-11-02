@@ -21,7 +21,7 @@ In the interface: **Settings → API tokens → New token**. Give it a name and 
 optional expiry. The token is shown **once**, at creation — copy it then; only a
 short prefix and the last-used time remain afterwards.
 
-Tokens are recognisable by their `zefile_live_` prefix, so a leaked one is easy
+Tokens are recognisable by their `bytewing_live_` prefix, so a leaked one is easy
 to spot in a log or a repository.
 
 ## Using a token
@@ -29,15 +29,15 @@ to spot in a log or a repository.
 Send it as a bearer credential:
 
 ```sh
-TOKEN=zefile_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TOKEN=bytewing_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # List a directory
 curl -H "Authorization: Bearer $TOKEN" \
-  "https://zefile.example.tld/api/v1/fs?path=/"
+  "https://bytewing.example.tld/api/v1/fs?path=/"
 
 # Get a short-lived signed download link, then fetch the file
 curl -H "Authorization: Bearer $TOKEN" \
-  "https://zefile.example.tld/api/v1/fs/link?path=/reports/q3.pdf"
+  "https://bytewing.example.tld/api/v1/fs/link?path=/reports/q3.pdf"
 ```
 
 ## Revoking a token

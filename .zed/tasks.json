@@ -1,12 +1,12 @@
 [
   {
     "label": "Build and restart docker dev",
-    "command": "docker compose -f deploy/docker-compose.dev.yml up --build -d --force-recreate zefile",
+    "command": "docker compose -f deploy/docker-compose.dev.yml up --build -d --force-recreate bytewing",
     "hide": "on_success",
   },
   {
     "label": "Backend dev server",
-    "command": "sh -c 'if [ -f deploy/.env ]; then set -a; . deploy/.env; set +a; fi; mkdir -p data config && ZEFILE_APP_URL=http://localhost:8080 ZEFILE_DATA_DIR=$PWD/data ZEFILE_CONFIG_DIR=$PWD/config exec go run ./cmd/zefile'",
+    "command": "sh -c 'if [ -f deploy/.env ]; then set -a; . deploy/.env; set +a; fi; mkdir -p data config && BYTEWING_APP_URL=http://localhost:8080 BYTEWING_DATA_DIR=$PWD/data BYTEWING_CONFIG_DIR=$PWD/config exec go run ./cmd/bytewing'",
   },
   {
     "label": "UI dev server",

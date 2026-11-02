@@ -109,7 +109,7 @@ CREATE TABLE acl (
 CREATE INDEX acl_path_idx ON acl (path);
 CREATE INDEX acl_subject_idx ON acl (subject_type, subject_id);
 
--- Ownership is sparse: only files uploaded through Zefile have a row. Anything
+-- Ownership is sparse: only files uploaded through ByteWing have a row. Anything
 -- placed by other means simply has no owner and falls back to ACL rules.
 --
 -- Keyed by path, so an entry left behind by a move performed outside the

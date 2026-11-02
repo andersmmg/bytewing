@@ -28,14 +28,14 @@ import (
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite" // pure-Go driver: no cgo, so the binary stays static
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
 // FileName is the database file inside the configuration directory.
-const FileName = "zefile.db"
+const FileName = "bytewing.db"
 
 // Config configures [Open].
 type Config struct {
@@ -132,7 +132,7 @@ func (d *DB) Close() error {
 	return errors.Join(readErr, writeErr)
 }
 
-// openPool opens one pool with the pragmas Zefile depends on.
+// openPool opens one pool with the pragmas ByteWing depends on.
 //
 // The pragmas travel in the DSN rather than being issued after connecting: a
 // pool opens connections lazily and reconnects on its own, so anything set by a
@@ -186,7 +186,7 @@ func migrate(ctx context.Context, pool *sql.DB, path string, existed bool) error
 
 	// Before changing the schema of a database that already holds data, snapshot
 	// it. A migration that fails partway or turns out to be wrong can then be
-	// undone with `zefile restore`, rather than leaving a half-migrated database
+	// undone with `bytewing restore`, rather than leaving a half-migrated database
 	// with no way back.
 	if existed {
 		pending, err := provider.HasPending(ctx)

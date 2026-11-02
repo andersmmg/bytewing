@@ -19,10 +19,10 @@ const TokenBytes = 32
 // recognisable in a repository, a log file or a paste — secret scanners look
 // for exactly this shape.
 const (
-	SessionPrefix = "zefile_sess_"
-	APIPrefix     = "zefile_live_"
-	InvitePrefix  = "zefile_inv_"
-	SharePrefix   = "zefile_shr_"
+	SessionPrefix = "bytewing_sess_"
+	APIPrefix     = "bytewing_live_"
+	InvitePrefix  = "bytewing_inv_"
+	SharePrefix   = "bytewing_shr_"
 )
 
 // NewToken returns a fresh token and the hash to store for it.

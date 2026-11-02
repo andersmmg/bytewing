@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/acl"
-	"github.com/krishna2206/zefile/internal/auth"
+	"github.com/andersmmg/bytewing/internal/acl"
+	"github.com/andersmmg/bytewing/internal/auth"
 )
 
 type requestIDKey struct{}
@@ -161,7 +161,7 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 	})
 }
 
-// serveWithAPIToken authenticates a request bearing a zefile_live_ token.
+// serveWithAPIToken authenticates a request bearing a bytewing_live_ token.
 //
 // It resolves to the same subject a session would, so every downstream
 // permission check behaves identically no matter how the caller arrived: a

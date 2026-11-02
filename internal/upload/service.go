@@ -22,10 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/auth"
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/auth"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // DefaultTTL is how long an untouched session survives.
@@ -180,7 +180,7 @@ func (s *Service) Create(ctx context.Context, userID int64, target storage.Path,
 		return Session{}, err
 	}
 
-	token, _, err := auth.NewToken("zefile_up_")
+	token, _, err := auth.NewToken("bytewing_up_")
 	if err != nil {
 		_ = s.fs.DiscardStage(ctx, stage)
 		return Session{}, err
@@ -216,7 +216,7 @@ func (s *Service) createDirect(ctx context.Context, userID int64, target storage
 		return Session{}, err
 	}
 
-	token, _, err := auth.NewToken("zefile_up_")
+	token, _, err := auth.NewToken("bytewing_up_")
 	if err != nil {
 		_ = s.direct.AbortUpload(ctx, handle)
 		return Session{}, err

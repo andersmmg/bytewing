@@ -1,4 +1,4 @@
-<title>Zefile — Roadmap d'implémentation</title>
+<title>ByteWing — Roadmap d'implémentation</title>
 
 <style>
   :root {
@@ -155,7 +155,7 @@
 <div class="shell">
 
   <header class="masthead">
-    <div class="eyebrow">Zefile · roadmap d'implémentation · v1.2</div>
+    <div class="eyebrow">ByteWing · roadmap d'implémentation · v1.2</div>
     <h1>Roadmap d'implémentation</h1>
     <p class="standfirst">Découpage ordonné par dépendances techniques, sans échéance. Chaque élément est un lot de travail cohérent, avec son critère d’achèvement.</p>
   </header>
@@ -350,7 +350,7 @@
       <div class="item shipped">
         <span class="id">3.5</span>
         <div class="title">Jetons d’API<span class="status">Fait</span></div>
-        <div class="body">Chaque compte crée ses propres jetons <code>zefile_live_</code> pour un script, une intégration ou la CI. Autorité complète du compte, résolue à chaque requête&nbsp;; affichage unique à la création, date de dernier usage, révocation individuelle. Pas de portées&nbsp;: modèle Dokploy assumé — l’atténuation d’une fuite passe par la révocation du jeton, pas par sa restriction.</div>
+        <div class="body">Chaque compte crée ses propres jetons <code>bytewing_live_</code> pour un script, une intégration ou la CI. Autorité complète du compte, résolue à chaque requête&nbsp;; affichage unique à la création, date de dernier usage, révocation individuelle. Pas de portées&nbsp;: modèle Dokploy assumé — l’atténuation d’une fuite passe par la révocation du jeton, pas par sa restriction.</div>
         <div class="done"><b>Terminé quand</b> modifier les droits d’un compte prend effet aussitôt sur ses jetons, et qu’en révoquer un coupe l’accès à la requête suivante.</div>
       </div>
 
@@ -369,7 +369,7 @@
     <div class="phase-head">
       <span class="n">4</span>
       <h2>Confort</h2>
-      <p class="goal">Objectif&nbsp;: les fonctionnalités qui font préférer Zefile à un partage réseau. La file de tâches vient en premier&nbsp;— c’est le moteur des trois suivantes.</p>
+      <p class="goal">Objectif&nbsp;: les fonctionnalités qui font préférer ByteWing à un partage réseau. La file de tâches vient en premier&nbsp;— c’est le moteur des trois suivantes.</p>
     </div>
     <div class="items">
 
@@ -444,7 +444,7 @@
       <div class="item shipped">
         <span class="id">5.1</span>
         <div class="title">Sauvegarde et restauration<span class="status">Fait</span></div>
-        <div class="body"><code>zefile backup</code> (copie cohérente à chaud par <code>VACUUM INTO</code>) et <code>zefile restore</code> (validation du fichier, copie de sécurité de la base remplacée, rapport des chemins absents du disque). Instantané automatique de la base avant toute migration de schéma. Restauration sur machine vierge vérifiée de bout en bout.</div>
+        <div class="body"><code>bytewing backup</code> (copie cohérente à chaud par <code>VACUUM INTO</code>) et <code>bytewing restore</code> (validation du fichier, copie de sécurité de la base remplacée, rapport des chemins absents du disque). Instantané automatique de la base avant toute migration de schéma. Restauration sur machine vierge vérifiée de bout en bout.</div>
         <div class="done"><b>Terminé quand</b> une restauration sur une machine vierge est vérifiée de bout en bout.</div>
       </div>
 
@@ -491,7 +491,7 @@
   </div>
 
   <div class="colophon">
-    <span>Zefile — roadmap d’implémentation</span>
+    <span>ByteWing — roadmap d’implémentation</span>
     <span>Version 1.2</span>
     <span>2 août 2026</span>
     <span>Adossée au document de conception rév. 1.3</span>

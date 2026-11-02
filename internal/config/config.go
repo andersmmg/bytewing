@@ -1,4 +1,4 @@
-// Package config reads and validates the settings a Zefile instance runs on.
+// Package config reads and validates the settings a ByteWing instance runs on.
 //
 // Everything comes from the environment. A self-hosted service is deployed from
 // a compose file far more often than from a configuration file, and one source
@@ -18,37 +18,37 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 // Environment variables read by [Load].
 const (
-	EnvAppURL     = "ZEFILE_APP_URL"
-	EnvContentURL = "ZEFILE_CONTENT_URL"
-	EnvDataDir    = "ZEFILE_DATA_DIR"
-	EnvConfigDir  = "ZEFILE_CONFIG_DIR"
-	EnvListen     = "ZEFILE_LISTEN"
-	EnvReserve    = "ZEFILE_RESERVE_BYTES"
-	EnvReadOnly   = "ZEFILE_READ_ONLY"
+	EnvAppURL     = "BYTEWING_APP_URL"
+	EnvContentURL = "BYTEWING_CONTENT_URL"
+	EnvDataDir    = "BYTEWING_DATA_DIR"
+	EnvConfigDir  = "BYTEWING_CONFIG_DIR"
+	EnvListen     = "BYTEWING_LISTEN"
+	EnvReserve    = "BYTEWING_RESERVE_BYTES"
+	EnvReadOnly   = "BYTEWING_READ_ONLY"
 
-	EnvAllowURLFetch = "ZEFILE_ALLOW_URL_FETCH"
+	EnvAllowURLFetch = "BYTEWING_ALLOW_URL_FETCH"
 
 	// Backend and object-storage settings
-	EnvThumbMaxBytes     = "ZEFILE_THUMB_MAX_BYTES"
-	EnvPreviewMaxBytes   = "ZEFILE_PREVIEW_MAX_BYTES"
-	EnvQuotaBytes        = "ZEFILE_QUOTA_BYTES"
-	EnvStorageBackend    = "ZEFILE_STORAGE_BACKEND"
-	EnvS3Endpoint        = "ZEFILE_S3_ENDPOINT"
-	EnvS3Region          = "ZEFILE_S3_REGION"
-	EnvS3Bucket          = "ZEFILE_S3_BUCKET"
-	EnvS3Prefix          = "ZEFILE_S3_PREFIX"
-	EnvS3AccessKeyID     = "ZEFILE_S3_ACCESS_KEY_ID"
-	EnvS3SecretAccessKey = "ZEFILE_S3_SECRET_ACCESS_KEY"
-	EnvS3ForcePathStyle  = "ZEFILE_S3_FORCE_PATH_STYLE"
-	EnvS3PartSize        = "ZEFILE_S3_PART_SIZE"
-	EnvS3PresignTTL      = "ZEFILE_S3_PRESIGN_TTL"
-	EnvS3MetaTTL         = "ZEFILE_S3_META_TTL"
-	EnvS3PublicEndpoint  = "ZEFILE_S3_PUBLIC_ENDPOINT"
+	EnvThumbMaxBytes     = "BYTEWING_THUMB_MAX_BYTES"
+	EnvPreviewMaxBytes   = "BYTEWING_PREVIEW_MAX_BYTES"
+	EnvQuotaBytes        = "BYTEWING_QUOTA_BYTES"
+	EnvStorageBackend    = "BYTEWING_STORAGE_BACKEND"
+	EnvS3Endpoint        = "BYTEWING_S3_ENDPOINT"
+	EnvS3Region          = "BYTEWING_S3_REGION"
+	EnvS3Bucket          = "BYTEWING_S3_BUCKET"
+	EnvS3Prefix          = "BYTEWING_S3_PREFIX"
+	EnvS3AccessKeyID     = "BYTEWING_S3_ACCESS_KEY_ID"
+	EnvS3SecretAccessKey = "BYTEWING_S3_SECRET_ACCESS_KEY"
+	EnvS3ForcePathStyle  = "BYTEWING_S3_FORCE_PATH_STYLE"
+	EnvS3PartSize        = "BYTEWING_S3_PART_SIZE"
+	EnvS3PresignTTL      = "BYTEWING_S3_PRESIGN_TTL"
+	EnvS3MetaTTL         = "BYTEWING_S3_META_TTL"
+	EnvS3PublicEndpoint  = "BYTEWING_S3_PUBLIC_ENDPOINT"
 )
 
 // Storage backends [Config.Backend] may name.
@@ -65,23 +65,23 @@ const DefaultListen = ":8080"
 
 const (
 	// DefaultS3PartSize is the multipart part length when
-	// ZEFILE_S3_PART_SIZE is unset.
+	// BYTEWING_S3_PART_SIZE is unset.
 	DefaultS3PartSize = storage.DefaultPartSize
 
 	// minS3PartSize is the provider-side floor every part but the last must satisfy.
 	minS3PartSize = 5 << 20
 
 	// DefaultS3PresignTTL is how long minted capability URLs stay valid when
-	// ZEFILE_S3_PRESIGN_TTL is unset.
+	// BYTEWING_S3_PRESIGN_TTL is unset.
 	DefaultS3PresignTTL = 15 * time.Minute
 
 	// DefaultS3MetaTTL is how long S3 metadata rows are served from the
-	// cache when ZEFILE_S3_META_TTL is unset. Mutations the app makes
+	// cache when BYTEWING_S3_META_TTL is unset. Mutations the app makes
 	// invalidate immediately; the TTL only bounds how stale rows for
 	// changes made outside the app can get.
 	DefaultS3MetaTTL = time.Minute
 
-	// DefaultPreviewMaxBytes applies when ZEFILE_PREVIEW_MAX_BYTES is
+	// DefaultPreviewMaxBytes applies when BYTEWING_PREVIEW_MAX_BYTES is
 	// unset. It mirrors the api default.
 	DefaultPreviewMaxBytes = 2 << 20
 
@@ -288,7 +288,7 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-// StorageBackend reads ZEFILE_STORAGE_BACKEND without the rest of [Load],
+// StorageBackend reads BYTEWING_STORAGE_BACKEND without the rest of [Load],
 // for maintenance commands that skip full configuration.
 func StorageBackend() (string, error) {
 	raw := strings.ToLower(strings.TrimSpace(os.Getenv(EnvStorageBackend)))

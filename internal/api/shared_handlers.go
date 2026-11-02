@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 type sharedWithMeResponse struct {

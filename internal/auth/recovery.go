@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // RecoveryCodeCount is how many single-use codes a fresh set holds.

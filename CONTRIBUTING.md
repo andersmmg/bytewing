@@ -1,4 +1,4 @@
-# Contributing to Zefile
+# Contributing to ByteWing
 
 Thanks for helping. This page is short on purpose.
 

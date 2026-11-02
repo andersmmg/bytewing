@@ -387,7 +387,7 @@ func (l *Local) Space(context.Context) (SpaceInfo, error) {
 
 // resolveExisting maps a key-form path to the name actually on disk.
 //
-// The direct lookup succeeds for everything Zefile created, so the fallback
+// The direct lookup succeeds for everything ByteWing created, so the fallback
 // only runs for files placed by other means — over SSH, or by a macOS client
 // that wrote a decomposed name.
 func (l *Local) resolveExisting(p Path) (string, os.FileInfo, error) {
@@ -435,7 +435,7 @@ func (l *Local) resolveForMkdirAll(p Path) (string, error) {
 // resolveForCreate maps a key-form path to where a new entry should be written:
 // the parent as it exists on disk, plus the requested name in key form.
 //
-// New names are always written in NFC. Zefile's own tree is therefore uniformly
+// New names are always written in NFC. ByteWing's own tree is therefore uniformly
 // normalised, and the fallback above stays a rare path rather than the norm.
 func (l *Local) resolveForCreate(p Path) (string, error) {
 	parent := p.Parent()

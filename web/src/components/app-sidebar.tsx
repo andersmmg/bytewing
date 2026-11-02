@@ -61,7 +61,7 @@ export function Sidebar({ user, space, section, create, canCreate, version, onHo
     <aside className="flex w-60 shrink-0 flex-col border-r bg-card/40">
       <div className="flex h-14 items-center gap-2 px-5">
         <img src={logoUrl} alt="" className="h-5 w-auto" />
-        <span className="font-serif text-xl font-semibold tracking-tight">Zefile</span>
+        <span className="font-serif text-xl font-semibold tracking-tight">ByteWing</span>
       </div>
 
       <div className="flex flex-col gap-1.5 px-3 pb-2">

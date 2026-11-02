@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/krishna2206/zefile/internal/content"
-	"github.com/krishna2206/zefile/internal/db"
-	"github.com/krishna2206/zefile/internal/db/sqlcgen"
+	"github.com/andersmmg/bytewing/internal/content"
+	"github.com/andersmmg/bytewing/internal/db"
+	"github.com/andersmmg/bytewing/internal/db/sqlcgen"
 )
 
 // SubjectLoader builds an authorisation context from an account identifier.

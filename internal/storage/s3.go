@@ -140,7 +140,7 @@ func OpenS3(cfg S3Config) (*S3, error) {
 		}
 		s.stageDir = cfg.StageDir
 	} else {
-		dir, err := os.MkdirTemp("", "zefile-stages")
+		dir, err := os.MkdirTemp("", "bytewing-stages")
 		if err != nil {
 			return nil, fmt.Errorf("storage: s3 staging directory: %w", err)
 		}

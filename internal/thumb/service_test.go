@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krishna2206/zefile/internal/job"
-	"github.com/krishna2206/zefile/internal/storage"
+	"github.com/andersmmg/bytewing/internal/job"
+	"github.com/andersmmg/bytewing/internal/storage"
 )
 
 func TestEligible(t *testing.T) {

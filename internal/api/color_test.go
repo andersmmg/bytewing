@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/krishna2206/zefile/internal/color"
+	"github.com/andersmmg/bytewing/internal/color"
 )
 
 func entryNamed(t *testing.T, entries []entry, name string) entry {
