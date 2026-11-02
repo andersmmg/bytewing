@@ -166,6 +166,10 @@ and becomes the release note.
 
 ## Credits
 
+ByteWing began as [zefile](https://github.com/krishna2206/zefile) by
+Fitiavana Anhy Krishna, and carries its git history forward under the same
+[Apache-2.0](LICENSE) licence — see [NOTICE](NOTICE).
+
 IP geolocation for the sessions screen uses the free
 [IP to City Lite database by DB-IP](https://db-ip.com/db/download/ip-to-city-lite)
 ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)), read offline — no
