@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sort"
@@ -972,7 +973,8 @@ func (s *Server) handleSpace(w http.ResponseWriter, r *http.Request) {
 		resp.InstanceUsed = snap.TotalBytes
 		resp.InstanceTotal = s.quota.ServerQuota()
 		if resp.InstanceTotal <= 0 {
-			resp.InstanceTotal = int64(info.Total)
+			total := min(info.Total, math.MaxInt64)
+			resp.InstanceTotal = int64(total) // #nosec G115 -- clamped to MaxInt64
 		}
 		if c, ok := callerFrom(r.Context()); ok {
 			resp.Used = snap.ByUser[c.user.ID]

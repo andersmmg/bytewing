@@ -27,8 +27,8 @@ const (
 	ActionPasswordChanged   = "auth.password_changed"
 	ActionTOTPEnabled       = "auth.totp_enabled"
 	ActionTOTPDisabled      = "auth.totp_disabled"
-	ActionPasskeyRegistered = "auth.passkey_registered"
-	ActionPasskeyRevoked    = "auth.passkey_revoked"
+	ActionPasskeyRegistered = "auth.passkey_registered" // #nosec G101 -- not a credential
+	ActionPasskeyRevoked    = "auth.passkey_revoked"    // #nosec G101 -- not a credential
 	ActionUserJoined        = "user.joined"
 	ActionUserUpdated       = "user.updated"
 	ActionUserDeleted       = "user.deleted"

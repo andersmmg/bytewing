@@ -264,7 +264,7 @@ func (s *Service) Generate(ctx context.Context, payload job.ThumbPayload) error 
 		s.noteFailed(payload.Key)
 		return render
 	}
-	thumb, err := os.ReadFile(out)
+	thumb, err := os.ReadFile(out) // #nosec G304 -- function created temp path
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func runFFmpeg(ctx context.Context, src, dst string) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, ffmpegTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "ffmpeg",
+	cmd := exec.CommandContext(ctx, "ffmpeg", // #nosec G204 -- literal binary, never a shell string
 		"-y", "-v", "error",
 		"-ss", "1", "-i", src,
 		"-frames:v", "1",
@@ -310,7 +310,7 @@ func runFFmpeg(ctx context.Context, src, dst string) error {
 
 // makeImageThumb decodes src, fits it in maxSide and writes a JPEG.
 func makeImageThumb(src, dst string) error {
-	in, err := os.Open(src)
+	in, err := os.Open(src) // #nosec G304 -- caller created temp path
 	if err != nil {
 		return err
 	}
@@ -320,7 +320,7 @@ func makeImageThumb(src, dst string) error {
 		return fmt.Errorf("thumb: decode: %w", err)
 	}
 	fit := fitWithin(img, maxSide)
-	out, err := os.Create(dst)
+	out, err := os.Create(dst) // #nosec G304 -- caller created temp path
 	if err != nil {
 		return err
 	}

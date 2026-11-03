@@ -44,7 +44,7 @@ func (s *S3) NewStage(context.Context) (StageID, error) {
 	if err != nil {
 		return "", err
 	}
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- p comes from stagePath, which rejects separators
 	if err != nil {
 		return "", fmt.Errorf("storage: s3 stage: %w", err)
 	}
@@ -69,7 +69,7 @@ func (s *S3) EnsureStage(ctx context.Context, id StageID) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE, 0o600)
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE, 0o600) // #nosec G304 -- p comes from stagePath, which rejects separators
 	if err != nil {
 		return 0, fmt.Errorf("storage: s3 stage: %w", err)
 	}
@@ -116,7 +116,7 @@ func (s *S3) AppendToStage(ctx context.Context, id StageID, offset int64, src io
 	if err != nil {
 		return 0, err
 	}
-	f, err := os.OpenFile(p, os.O_WRONLY, 0o600)
+	f, err := os.OpenFile(p, os.O_WRONLY, 0o600) // #nosec G304 -- p comes from stagePath, which rejects separators
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return 0, ErrNoStagedFile
@@ -178,7 +178,7 @@ func (s *S3) CommitStage(ctx context.Context, id StageID, to Path) error {
 			return err
 		}
 	} else {
-		f, err := os.Open(p)
+		f, err := os.Open(p) // #nosec G304 -- p comes from stagePath, which rejects separators
 		if err != nil {
 			return fmt.Errorf("storage: s3 stage: %w", err)
 		}
@@ -237,10 +237,7 @@ func (s *S3) uploadStaged(ctx context.Context, src *os.File, size int64, to Path
 
 	parts := make([]types.CompletedPart, 0, (size+s.partSize-1)/s.partSize)
 	for number, offset := int32(1), int64(0); offset < size; number, offset = number+1, offset+s.partSize {
-		end := offset + s.partSize
-		if end > size {
-			end = size
-		}
+		end := min(offset+s.partSize, size)
 		part, err := s.client.UploadPart(ctx, &awss3.UploadPartInput{
 			Bucket:     aws.String(s.bucket),
 			Key:        aws.String(key),
@@ -276,7 +273,7 @@ func (s *S3) OpenStage(_ context.Context, id StageID) (File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.Open(p)
+	f, err := os.Open(p) // #nosec G304 -- p comes from stagePath, which rejects separators
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, ErrNoStagedFile
