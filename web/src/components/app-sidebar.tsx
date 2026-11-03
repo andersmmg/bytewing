@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NewButton, type CreateActions } from '@/components/create-menu'
-import logoUrl from '@/assets/logo.png'
+import mark from '@/assets/logo.svg?raw'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,8 +60,12 @@ export function Sidebar({ user, space, section, create, canCreate, version, onHo
     <IconContext.Provider value={{ weight: 'duotone' }}>
     <aside className="flex w-60 shrink-0 flex-col border-r bg-card/40">
       <div className="flex h-14 items-center gap-2 px-5">
-        <img src={logoUrl} alt="" className="h-5 w-auto" />
-        <span className="font-serif text-xl font-semibold tracking-tight">ByteWing</span>
+        <span
+          aria-hidden="true"
+          className="mb-1 h-6 [&>svg]:h-full [&>svg]:w-auto"
+          dangerouslySetInnerHTML={{ __html: mark }}
+        />
+        <span className="font-display text-xl font-semibold tracking-tight">ByteWing</span>
       </div>
 
       <div className="flex flex-col gap-1.5 px-3 pb-2">

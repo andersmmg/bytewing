@@ -28,3 +28,6 @@
 
 # Dev-stack secrets (B2 keys for docker-compose.dev.yml)
 deploy/.env
+
+# Generated files
+bytewing_fullsize.png

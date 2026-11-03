@@ -28,6 +28,10 @@ dist: web build
 generate:
 	go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1 generate
 
+## icons: rasterise bytewing_fullsize.svg and regenerate logo and favicons
+icons:
+	./generate-icons.sh
+
 ## test: run the test suite with race detection
 test:
 	go test -race ./...
@@ -55,4 +59,4 @@ clean:
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
 
-.PHONY: build web dist run generate test vet fmt vuln check clean help
+.PHONY: build web dist run generate icons test vet fmt vuln check clean help

@@ -2,16 +2,25 @@
  * ByteWing documentation theme.
  *
  * Maps the palette and typography of the design documents (docs/design/*.html)
- * onto VitePress's CSS variables: warm paper ground, deep-green accent, serif
- * display face for headings. Light and dark are the same two schemes the design
- * documents use.
+ * onto VitePress's CSS variables: warm paper ground, deep-green accent,
+ * Fredoka display face for headings and the wordmark. Light and dark are the
+ * same two schemes the design documents use.
  */
+
+/* The wordmark face, served at public/fonts. */
+@font-face {
+  font-family: "Fredoka";
+  src: url("/bytewing/fonts/Fredoka-VariableFont_wdth,wght.ttf") format("truetype");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   /* Typography */
   --vp-font-family-base: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --vp-font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  --zf-font-display: "Charter", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --bw-font-display: "Fredoka", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   /* Surfaces — light */
   --vp-c-bg: #f4f5f2;        /* ground */
@@ -52,6 +61,8 @@
 
   /* Home hero: accent name, no gradient */
   --vp-home-hero-name-color: var(--vp-c-brand-1);
+
+  --vp-nav-logo-height: 28px;
 }
 
 .dark {
@@ -88,7 +99,17 @@
   --vp-button-brand-active-bg: #9ad6bf;
 }
 
-/* Serif display face for headings and the hero, as in the design documents. */
+/* Display face for headings, the hero, and the navbar wordmark. */
+.VPNavBarTitle .title {
+  font-family: var(--bw-font-display);
+  font-size: 1.5em;
+}
+
+.VPImage.logo {
+    margin-bottom: 0.3em;
+    margin-right: 0.1em;
+}
+
 .vp-doc h1,
 .vp-doc h2,
 .vp-doc h3,
@@ -97,9 +118,9 @@
 .VPHome .text,
 .VPHero .name,
 .VPHero .text {
-  font-family: var(--zf-font-display);
+  font-family: var(--bw-font-display);
   letter-spacing: -0.015em;
-  font-weight: 640;
+  font-weight: 475;
 }
 
 /* Logo set just before the hero name, in place of a separate hero image. */
@@ -113,12 +134,11 @@
   flex: none;
   /* The logo.png is cropped tight to the folder, so a size close to the
      wordmark reads well. Adjust this one number to taste. */
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.35em;
+  width: 1.15em;
+  height: 1.25em;
+  margin-right: 0.15em;
   /* base is /bytewing/; update this if the base path changes. */
-  background: url('/bytewing/logo.png') center / contain no-repeat;
-  border-radius: 6px;
+  background: url('/bytewing/logo.png') top / contain no-repeat;
 }
 
 /* A hairline under section headings, echoing the design documents' rules. */

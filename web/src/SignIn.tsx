@@ -270,7 +270,7 @@ export function SignIn({ mode, onDone }: Props) {
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-1 text-center">
           <img src={logoUrl} alt="" className="mx-auto mb-3 h-16 w-auto" />
-          <h1 className="font-serif text-4xl font-semibold tracking-tight">
+          <h1 className="font-display text-4xl font-semibold tracking-tight">
             ByteWing
           </h1>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -472,7 +472,7 @@ function AuthShell({
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-1 text-center">
           <img src={logoUrl} alt="" className="mx-auto mb-3 h-16 w-auto" />
-          <h1 className="font-serif text-4xl font-semibold tracking-tight">
+          <h1 className="font-display text-4xl font-semibold tracking-tight">
             ByteWing
           </h1>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
