@@ -9,11 +9,11 @@ this page is a short orientation.
 
 The design was written down before the code and is kept in the repository under
 [`docs/design/`](https://github.com/andersmmg/bytewing/tree/main/docs/design).
-They are the reference for the _what_ and the _why_:
+They are the reference for scope, architecture and interface decisions:
 
-- **conception.html** — scope, architecture, data model, security, API, deployment
-- **roadmap.html** — the work plan and what has shipped
-- **ui.html** — interface design, component inventory, states
+- **conception.html**: scope, architecture, data model, security, API, deployment
+- **roadmap.html**: the work plan and what has shipped
+- **ui.html**: interface design, component inventory, states
 
 ## Working on the code
 
@@ -30,5 +30,5 @@ This site is built with [VitePress](https://vitepress.dev). From `docs/`:
 ```sh
 pnpm install
 pnpm dev        # local preview with hot reload
-pnpm build      # production build
+pnpm build      # production build; fails on a dead internal link
 ```

@@ -8,7 +8,7 @@ Every setting comes from the environment and is validated at startup.
 
 **Required.** The public address of the application origin (the UI and API),
 e.g. `https://bytewing.example.tld`. Used to build links and to decide whether
-session cookies may be marked `Secure` — cookies are `Secure` when this URL uses
+session cookies may be marked `Secure`: cookies are `Secure` when this URL uses
 `https`.
 
 ### `BYTEWING_CONTENT_URL`
@@ -23,7 +23,7 @@ application itself. With the object-storage backend, downloads are presigned
 redirects to the store's own origin, so inline preview works regardless of
 this variable.
 
-ByteWing refuses to start if this shares a host with `BYTEWING_APP_URL` — separate
+ByteWing refuses to start if this shares a host with `BYTEWING_APP_URL`: separate
 origins are what keep an uploaded file from reaching a session.
 
 ### `BYTEWING_ALLOW_URL_FETCH`
@@ -40,8 +40,10 @@ quota.
 
 ### `BYTEWING_DATA_DIR`
 
-**Required.** The storage root — the directory users browse. Point it at a host
-directory (a bind mount), not a Docker volume, to give ByteWing the whole disk.
+**Required unless the storage backend is `s3`.** The storage root, meaning the
+directory users browse. Point it at a host directory (a bind mount), not a
+Docker volume, to give ByteWing the whole disk. It is not read in object-storage
+mode.
 
 ### `BYTEWING_CONFIG_DIR`
 
@@ -52,9 +54,10 @@ database they can download, password hashes included.
 ### `BYTEWING_RESERVE_BYTES`
 
 *Optional.* Free space kept in hand before refusing writes. Below the threshold
-the service goes read-only — reads, sign-in and deletes still work — rather than
+the service goes read-only (reads, sign-in and deletes still work) rather than
 letting the disk fill until SQLite can no longer write. Defaults to a built-in
-reserve.
+reserve. With the object-storage backend this setting is unused: there is no
+local disk to fill, and the staging area is bounded by its own free space.
 
 ### `BYTEWING_READ_ONLY`
 
@@ -77,22 +80,22 @@ prefix in the same storage; larger files keep their icon. Same size format.
 ### `BYTEWING_QUOTA_BYTES`
 
 *Optional, default `0` (unlimited).* Caps the bytes of live files the instance
-will hold: uploads that would push usage past it are refused with a “storage
-quota exceeded” error, checked when the upload starts and again when it
+will hold: uploads that would push usage past it are refused with a "storage
+quota exceeded" error, checked when the upload starts and again when it
 publishes. Per-account limits are set by an admin under **Members** (zero
-means unlimited) and are enforced the same way. Usage counts live files only —
-trash and generated thumbnails don’t count — and the sidebar shows each
+means unlimited) and are enforced the same way. Usage counts live files only
+(trash and generated thumbnails do not count), and the sidebar shows each
 account its own usage against its own limit. Same size format.
 
 ::: tip Retention
-How long the audit log and the trash are kept is **not** an environment setting —
+How long the audit log and the trash are kept is **not** an environment setting:
 it is configured at runtime under **Settings → Retention** (admin). See the
 [audit log](/features/audit-log).
 :::
 
 ## Object storage
 
-*Optional.* Set `BYTEWING_STORAGE_BACKEND=s3` to store files in S3-compatible
+*Optional.* Set `BYTEWING_STORAGE_BACKEND=s3` to keep files in S3-compatible
 object storage (AWS S3, Backblaze B2, Cloudflare R2, MinIO) instead of
 `BYTEWING_DATA_DIR`. `BYTEWING_S3_BUCKET` and `BYTEWING_S3_REGION` are required in
 this mode; `BYTEWING_S3_ENDPOINT` addresses a non-AWS provider, and
@@ -101,8 +104,11 @@ credentials (unset means the ambient AWS chain). `BYTEWING_S3_PREFIX` scopes the
 tree inside the bucket, `BYTEWING_S3_FORCE_PATH_STYLE` switches to path-style
 addressing, `BYTEWING_S3_PUBLIC_ENDPOINT` is the bucket's address as clients see
 it (for presigned URLs), `BYTEWING_S3_PART_SIZE` is the multipart part length
-(default 64 MiB, min 5 MiB; the browser uploads several parts concurrently), and `BYTEWING_S3_PRESIGN_TTL` bounds minted
-capability URLs (default 15 min).
+(default 64 MiB, min 5 MiB; the browser uploads several parts concurrently), and
+`BYTEWING_S3_PRESIGN_TTL` bounds minted capability URLs (default 15 min).
+
+Setup, provider examples, bucket CORS and the behaviour that changes are covered
+in [Object storage](/guide/object-storage).
 
 ### `BYTEWING_S3_META_TTL`
 
@@ -129,9 +135,13 @@ Two edge cases the entrypoint handles:
 
 - **A fresh, empty mount** (Docker creates a missing bind-mount target owned by
   root) is claimed for the image's built-in unprivileged user automatically.
-- **A root-owned directory that already holds files** is not reowned — ByteWing
+- **A root-owned directory that already holds files** is not reowned. ByteWing
   will not run as root. `chown` it to any non-root user once
   (`chown -R 1000:1000 <host directory>`) and ByteWing follows.
+
+With the object-storage backend there is no data directory to adopt, so the
+container runs as its built-in unprivileged user (uid/gid `1000`) and the config
+volume is chowned to match. Mount `/config` and nothing else.
 
 To pin a specific user regardless, set `user:` on the service in your compose
 file; the entrypoint sees it is already unprivileged and adopts nothing.

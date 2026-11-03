@@ -7,7 +7,7 @@ quickest way to run it is Docker Compose.
 
 - Docker with the Compose plugin
 - A directory on the host for your files
-- Two hostnames pointing at the server (recommended — see
+- Two hostnames pointing at the server (recommended; see
   [why two origins](#one-origin-or-two))
 
 ## Docker Compose
@@ -50,13 +50,13 @@ docker compose logs bytewing
 
 ::: tip Pin a version
 `:latest` follows every release. For a reproducible deployment, pin a tag such
-as `ghcr.io/andersmmg/bytewing:v0.8.0`.
+as `ghcr.io/andersmmg/bytewing:v0.10.0`.
 :::
 
 ## First run
 
-**There is no default account.** Shipping known credentials would mean every
-instance is compromised between deployment and the moment someone changes them.
+**There is no default account.** Shipping known credentials would leave every
+instance exposed between deployment and the moment someone changes them.
 
 Instead, the log prints a **one-time setup link** on first start:
 
@@ -82,6 +82,9 @@ carry a session cookie.
   previewing it in place. On the object-storage backend this does not apply:
   files are answered by presigned redirects to the store's own origin, so
   previews work either way.
+
+Files can also live in an S3-compatible bucket instead of `/data`; see
+[Object storage](/guide/object-storage).
 
 See [Deployment](/guide/deployment) for a reverse-proxy example, and
 [Environment variables](/reference/environment) for the full list.

@@ -112,6 +112,29 @@ jobs:
       - name: Build
         run: pnpm run build
 
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # The VitePress build fails on an internal link to a page that does not
+      # exist, so this job is what stops a dead link from reaching main.
+      - name: Build and check links
+        run: pnpm build
+
   image:
     name: Container image
     runs-on: ubuntu-latest
