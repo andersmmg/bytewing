@@ -79,7 +79,7 @@ func (s *Server) handleThumb(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "image/jpeg")
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write(data)
+				_, _ = w.Write(data) // #nosec G705 -- produced here, sent as image/jpeg with nosniff
 				return
 			}
 		}

@@ -12,6 +12,7 @@ import (
 	"image/png"
 	"io"
 	"io/fs"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -1562,6 +1563,16 @@ func (f bareFS) Open(context.Context, storage.Path) (storage.File, error) {
 	return cannedFile{Reader: bytes.NewReader(f.body), size: int64(len(f.body))}, nil
 }
 
+// hugeSpaceFS reports a volume larger than an int64 can hold, so it will need
+// to be clamped
+type hugeSpaceFS struct {
+	storage.FS
+}
+
+func (hugeSpaceFS) Space(context.Context) (storage.SpaceInfo, error) {
+	return storage.SpaceInfo{Available: math.MaxUint64, Total: math.MaxUint64}, nil
+}
+
 type cannedFile struct {
 	*bytes.Reader
 	size int64
@@ -1920,7 +1931,9 @@ func TestChildCount(t *testing.T) {
 }
 
 func TestSpaceReportsUsageAndQuota(t *testing.T) {
-	c := newClient(t)
+	c := newClient(t, func(o *api.Options) {
+		o.FS = hugeSpaceFS{FS: o.FS}
+	})
 	c.setUp() // admin krishna
 
 	if err := os.WriteFile(filepath.Join(c.root, "ledger.bin"), make([]byte, 1024), 0o600); err != nil {
@@ -1961,6 +1974,9 @@ func TestSpaceReportsUsageAndQuota(t *testing.T) {
 	}
 	if space.InstanceUsed != 1024 {
 		t.Errorf("instance_used = %d, want 1024", space.InstanceUsed)
+	}
+	if space.InstanceTotal != math.MaxInt64 {
+		t.Errorf("instance_total = %d, want %d (clamped from an oversized volume)", space.InstanceTotal, int64(math.MaxInt64))
 	}
 
 	resp, raw := c.do(http.MethodPost, "/api/v1/invitations", map[string]string{"email": "bob@example.com"})

@@ -43,7 +43,7 @@ const (
 	EnvS3Bucket          = "BYTEWING_S3_BUCKET"
 	EnvS3Prefix          = "BYTEWING_S3_PREFIX"
 	EnvS3AccessKeyID     = "BYTEWING_S3_ACCESS_KEY_ID"
-	EnvS3SecretAccessKey = "BYTEWING_S3_SECRET_ACCESS_KEY"
+	EnvS3SecretAccessKey = "BYTEWING_S3_SECRET_ACCESS_KEY" // #nosec G101 -- not a credential
 	EnvS3ForcePathStyle  = "BYTEWING_S3_FORCE_PATH_STYLE"
 	EnvS3PartSize        = "BYTEWING_S3_PART_SIZE"
 	EnvS3PresignTTL      = "BYTEWING_S3_PRESIGN_TTL"

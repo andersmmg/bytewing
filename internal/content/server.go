@@ -136,7 +136,7 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		// expiry, and a *stable* redirect target is what lets its HTTP
 		// cache the bytes this points at!
 		w.Header().Set("Cache-Control", "no-store")
-		http.Redirect(w, r, url, http.StatusFound)
+		http.Redirect(w, r, url, http.StatusFound) // #nosec G710 -- not user input
 		return
 	}
 
@@ -355,7 +355,7 @@ func (s *Server) serveShareFile(w http.ResponseWriter, r *http.Request, ctx cont
 		}
 		// Not cacheable, for the same reason as in handleDownload.
 		w.Header().Set("Cache-Control", "no-store")
-		http.Redirect(w, r, url, http.StatusFound)
+		http.Redirect(w, r, url, http.StatusFound) // #nosec G710 -- not user input
 		return
 	}
 
