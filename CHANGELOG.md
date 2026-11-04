@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/andersmmg/bytewing/compare/v0.11.1...v0.12.0) (2026-11-04)
+
+
+### Features
+
+* custom password length minimum ([#6](https://github.com/andersmmg/bytewing/issues/6)) ([b79e7e3](https://github.com/andersmmg/bytewing/commit/b79e7e37ebee6cb007b29db9444e6be2c29d2a69))
+
 ## [0.11.1](https://github.com/andersmmg/bytewing/compare/v0.11.0...v0.11.1) (2026-11-04)
 
 
