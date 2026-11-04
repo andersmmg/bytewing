@@ -14,29 +14,49 @@ in one atomic step.
 
 ## Copying and moving
 
-Copy, move and rename in place. A rename or move is instant — it never falls
-back to copying bytes across the disk. Copying a folder or a very large file
-runs as a background [job](#background-jobs) so a long copy never ties up the
-request.
+Copy, move and rename in place. On local storage a rename or move is a metadata
+operation, because it never copies bytes across the disk. A copy is attempted in
+the request; a folder or a very large file is handed to a background
+[job](#background-jobs) instead of holding the request open.
+
+On [object storage](/guide/object-storage) there is no rename: a move copies
+every object and then deletes the originals, and a folder does that inside the
+request. Expect a large move there to take as long as a copy.
 
 ## Downloading
 
 Download through a short-lived **signed link** that works with download managers:
-no cookies, correct `Range` support, parallel connections. A folder or a
-multi-file selection downloads as a single **zip streamed on the fly** — no
-temporary file, no compression, so throughput is bound by disk and network
-rather than CPU. The zip switches to Zip64 automatically for large trees.
+no cookies, correct `Range` support, parallel connections. On object storage the
+link redirects to a presigned bucket URL, which the bucket serves directly.
+
+A folder or a multi-file selection downloads as a single **zip streamed on the
+fly**: no temporary file, no compression, so throughput is bound by disk and
+network rather than CPU. The zip switches to Zip64 automatically for large
+trees, and is assembled by the server even when the files live in a bucket.
+
+## Colours and links
+
+Every entry can carry a **colour** label, set from its right-click menu. Labels
+are per user and carry no access: two people can see the same folder in
+different colours, and a label neither grants nor removes a permission. The same
+is true of a **link**: paste with `⌘⇧V` (`Ctrl+Shift+V`) into a folder, and an
+entry is created there that points at the copied file.
+
+A link is a per-user shortcut rather than a second copy. Creating one requires
+read access to the target. Afterwards it resolves through the normal permission
+checks on every request, so if the target is moved or deleted the link stops
+working rather than exposing something new. Remove it like any other entry.
 
 ## Downloading from a URL
 
 Paste a link and the server fetches it at **its own bandwidth** rather than
-yours — the point when the file is tens of gigabytes. It lands in the current
-folder as a background job.
+yours, which is the point when the file is tens of gigabytes. It lands in the
+current folder as a background job.
 
 The fetch is guarded against server-side request forgery. Only `http` and
 `https` are allowed, and the real IP being dialed is checked on **every
-connection and every redirect**, so a URL that resolves — or redirects — to a
-loopback, private, link-local or cloud-metadata address is refused rather than
+connection and every redirect**, so a URL that resolves or redirects to a
+loopback, private, link-local or cloud-metadata address is refused, rather than
 letting the server reach its own network. A download that needs credentials the
 URL does not carry fails with the source's status (for example `403 Forbidden`)
 rather than saving a login page.
@@ -48,21 +68,22 @@ booby-trapped archive cannot escape: each entry name is validated exactly like
 any other path, so a `../` traversal is refused before it touches the disk, and
 symlinks inside the archive are ignored. A decompression bomb is refused by caps
 on the entry count, the total uncompressed size, and the per-entry expansion
-ratio — the ratio checked against bytes actually written, not the header's claim.
+ratio; the ratio is measured against bytes actually written, not the header's
+claim.
 
 ## Checksums
 
 Ask for a file's **SHA-256** from its menu. On
-[object storage](/guide/deployment) the browser computes the digest **while
-the file uploads** and hands it over with the upload (nothing streams
-through the server) so it appears in one request, labelled *hashed in your
-browser*: the server never saw those bytes and presents the claim as exactly
-that. Where the store itself holds a value (a single-shot write, such as an
-empty file), that one is used instead. For everything else (file uploaded
-before checksums existed, a copy made server-side) hashing runs as a
-background job and the result is cached, invalidated when the file's size or
-modification time changes, so verifying even a very large file never blocks
-the server. On local storage the job is where every digest comes from.
+[object storage](/guide/object-storage) the browser computes the digest **while
+the file uploads** and sends it with the upload, so nothing streams through the
+server just to be hashed. The result is labelled *hashed in your browser*: the
+server never saw those bytes, so it presents the claim as exactly that. Where the
+store holds a value of its own (a single-shot write, such as an empty file),
+that value is used instead. Everything else is hashed in a background job: a file
+uploaded before checksums existed, or a copy made server-side. The result is
+cached and invalidated when the file's size or modification time changes, so
+verifying even a very large file never blocks the server. On local storage every
+digest comes from that job.
 
 ## Background jobs
 

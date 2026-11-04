@@ -7,19 +7,29 @@ navigation between files in the same folder.
 
 - **Images** and **PDF**
 - **Video**, with seeking, and **audio**
-- **Text** — including code and Markdown, shown **as source**, without syntax
+- **Text**, including code and Markdown, shown **as source**, without syntax
   highlighting or rendering
 
-## A deliberate decision: the server never parses documents
+## The server never parses documents
 
-Everything relies on what the browser renders natively — images, video, audio,
-PDF in a sandboxed iframe — while text is shown as raw source. There is **no
-document parser in the backend**, and therefore no library-parsing
-vulnerability to track. That is precisely the category of problems the author of
-File Browser gave up trying to fix.
+Everything relies on what the browser renders natively (images, video, audio,
+and PDF in a sandboxed iframe), while text is shown as raw source. There is **no
+document parser in the backend**, so there is no library-parsing vulnerability
+to track, which is the category of problem the author of File Browser gave up
+trying to fix.
 
-## Requires two origins
+The PDF viewer runs in an iframe with `allow-scripts` and `allow-same-origin`,
+because pdf.js will not render pages without scripting. That frame is loaded
+from the content origin, not the application origin, so a script inside it has
+no access to your session.
 
-In-place preview needs a separate content origin. In single-origin mode every
-file is sent as a download instead. See
+## Object storage
+
+When files live in an S3-compatible bucket, downloads are presigned redirects,
+so previews work whether or not you run a second origin.
+
+## Local storage
+
+With local storage, in-place preview needs a separate content origin. In
+single-origin mode every file is sent as a download instead. See
 [One origin, or two?](/guide/installation#one-origin-or-two).
