@@ -33,7 +33,7 @@ const (
 
 	EnvAllowURLFetch = "BYTEWING_ALLOW_URL_FETCH"
 
-	EnvMinPasswordLength = "BYTEWING_MIN_PASSWORD_LENGTH"
+	EnvMinPasswordLength = "BYTEWING_MIN_PASSWORD_LENGTH" // #nosec G101 -- not a credential
 
 	// Backend and object-storage settings
 	EnvThumbMaxBytes     = "BYTEWING_THUMB_MAX_BYTES"
