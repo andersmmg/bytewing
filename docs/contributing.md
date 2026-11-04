@@ -5,16 +5,6 @@ repository at
 [`CONTRIBUTING.md`](https://github.com/andersmmg/bytewing/blob/main/CONTRIBUTING.md);
 this page is a short orientation.
 
-## Design documents
-
-The design was written down before the code and is kept in the repository under
-[`docs/design/`](https://github.com/andersmmg/bytewing/tree/main/docs/design).
-They are the reference for scope, architecture and interface decisions:
-
-- **conception.html**: scope, architecture, data model, security, API, deployment
-- **roadmap.html**: the work plan and what has shipped
-- **ui.html**: interface design, component inventory, states
-
 ## Working on the code
 
 - Backend is Go 1.27 with pure-Go SQLite; run `make check` before a PR.

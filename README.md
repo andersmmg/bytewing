@@ -111,9 +111,6 @@ lives at **[andersmmg.github.io/bytewing](https://andersmmg.github.io/bytewing/)
 The source is in [`docs/`](docs/) ([VitePress](https://vitepress.dev)); build it
 locally with `cd docs && pnpm install && pnpm dev`.
 
-The design documents that predate the code (scope, architecture, data model and
-interface) are kept in [`docs/design/`](docs/design/).
-
 ## Deploying
 
 ByteWing ships as a container image. The compose file builds it from source, which

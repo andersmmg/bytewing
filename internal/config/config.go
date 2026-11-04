@@ -112,8 +112,7 @@ type Config struct {
 	AppURL *url.URL
 
 	// ContentURL is the public address of the content origin. When empty the
-	// instance runs in single-origin mode, described in the design document as
-	// a deliberate, hardened degradation rather than an accident.
+	// instance runs in single-origin mode. Deliberate, hardened degradation.
 	ContentURL *url.URL
 
 	// DataDir is the storage root: the directory users browse.
@@ -155,7 +154,7 @@ type Config struct {
 }
 
 // SingleOrigin reports whether user content is served from the application
-// origin, which requires the hardening described in the design document.
+// origin.
 func (c Config) SingleOrigin() bool { return c.ContentURL == nil }
 
 // S3Settings are the object-storage knobs, validated only in [BackendS3]
