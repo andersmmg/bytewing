@@ -83,7 +83,7 @@ func (s *Service) ResetPasswordWithCode(ctx context.Context, username, code, new
 		return ErrRateLimited
 	}
 
-	if err := ValidatePassword(newPassword, username); err != nil {
+	if err := s.validatePassword(newPassword, username); err != nil {
 		return err
 	}
 

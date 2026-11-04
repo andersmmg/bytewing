@@ -19,7 +19,11 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
 import logoUrl from "@/assets/logo.png";
 
-type Props = { mode: "login" | "setup" | "accept"; onDone: () => void };
+type Props = {
+  mode: "login" | "setup" | "accept";
+  minPasswordLength: number;
+  onDone: () => void;
+};
 
 /** Field-level messages, keyed the way the API reports them. */
 type FieldErrors = Partial<
@@ -38,7 +42,7 @@ type FieldErrors = Partial<
  * And the server's own messages are shown when they arrive, since it knows
  * things the browser cannot — that a name is taken, that a token has expired.
  */
-export function SignIn({ mode, onDone }: Props) {
+export function SignIn({ mode, minPasswordLength, onDone }: Props) {
   const setup = mode === "setup";
   const accept = mode === "accept";
   const creating = setup || accept;
@@ -135,9 +139,10 @@ export function SignIn({ mode, onDone }: Props) {
       const length = [...password].length;
       if (length === 0) {
         found.password = "Choose a password.";
-      } else if (length < 12) {
-        found.password = `${12 - length} more character${12 - length === 1 ? "" : "s"} to go.`;
-      } else if (new Set(password).size < 4) {
+      } else if (length < minPasswordLength) {
+        const remaining = minPasswordLength - length;
+        found.password = `${remaining} more character${remaining === 1 ? "" : "s"} to go.`;
+      } else if (new Set(password).size < Math.min(4, minPasswordLength)) {
         found.password = "Use more variety than a repeated character.";
       } else if (name.length >= 4 && password.toLowerCase().includes(name)) {
         found.password = "Do not build the password out of your username.";
@@ -253,7 +258,10 @@ export function SignIn({ mode, onDone }: Props) {
   if (stage === "reset") {
     return (
       <AuthShell subtitle="Reset your password.">
-        <ResetCard onBack={() => setStage("auth")} />
+        <ResetCard
+          minPasswordLength={minPasswordLength}
+          onBack={() => setStage("auth")}
+        />
       </AuthShell>
     );
   }
@@ -349,7 +357,7 @@ export function SignIn({ mode, onDone }: Props) {
                   error={errors.password}
                   hint={
                     creating
-                      ? "At least 12 characters. A few ordinary words beat a short, clever one."
+                      ? `At least ${minPasswordLength} characters. A few ordinary words beat a short, clever one.`
                       : undefined
                   }
                 >
@@ -536,7 +544,13 @@ type ResetErrors = Partial<
 
 /** ResetCard is the forgotten-password flow: a username and a recovery code set
  *  a new password, no email involved. */
-function ResetCard({ onBack }: { onBack: () => void }) {
+function ResetCard({
+  minPasswordLength,
+  onBack,
+}: {
+  minPasswordLength: number;
+  onBack: () => void;
+}) {
   const [username, setUsername] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -551,8 +565,8 @@ function ResetCard({ onBack }: { onBack: () => void }) {
     const found: ResetErrors = {};
     if (!username.trim()) found.username = "Enter your username.";
     if (!code.trim()) found.code = "Enter a recovery code.";
-    if ([...password].length < 12)
-      found.password = "Use at least 12 characters.";
+    if ([...password].length < minPasswordLength)
+      found.password = `Use at least ${minPasswordLength} characters.`;
     if (confirm !== password) found.confirm = "These do not match.";
     setErrors(found);
     if (Object.values(found).some(Boolean)) return;

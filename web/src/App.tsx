@@ -1,86 +1,119 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from "react";
 
-import { api, ApiError, type User } from './api'
-import { contentCache } from './lib/content-cache'
-import { applyPalette, DEFAULT_PALETTE } from './lib/palette'
-import { SignIn } from './SignIn'
-import { Browser } from './Browser'
-import { CircleNotchIcon } from '@phosphor-icons/react'
+import { api, ApiError, type User } from "./api";
+import { contentCache } from "./lib/content-cache";
+import { applyPalette, DEFAULT_PALETTE } from "./lib/palette";
+import { SignIn } from "./SignIn";
+import { Browser } from "./Browser";
+import { CircleNotchIcon } from "@phosphor-icons/react";
 
 type State =
-  | { phase: 'loading' }
-  | { phase: 'setup' }
-  | { phase: 'accept' }
-  | { phase: 'signed-out' }
-  | { phase: 'ready'; user: User }
+  | { phase: "loading" }
+  | { phase: "setup" }
+  | { phase: "accept" }
+  | { phase: "signed-out" }
+  | { phase: "ready"; user: User };
 
 /** onInviteRoute reports whether the page was opened from an invite link. */
 function onInviteRoute() {
-  return location.pathname === '/invite'
+  return location.pathname === "/invite";
 }
 
 export function App() {
-  const [state, setState] = useState<State>({ phase: 'loading' })
+  const [state, setState] = useState<State>({ phase: "loading" });
+  // The pre-sign-in forms get the password rule from the server. The initial
+  // value matches the server default.
+  const [minPasswordLength, setMinPasswordLength] = useState(10);
 
   // Resolving the entry state takes two questions, in this order: is there an
   // account at all, and are we already signed in. Asking the second first
   // would show a sign-in form on an instance nobody can sign in to yet.
   const resolve = useCallback(async () => {
     const signOut = () => {
-      contentCache.clear()
-      applyPalette(DEFAULT_PALETTE)
-      setState({ phase: 'signed-out' })
-    }
-    // An invite link is its own entry point: it creates an account, so it comes
-    // before the is-there-an-account and are-we-signed-in questions.
-    if (onInviteRoute()) {
-      setState({ phase: 'accept' })
-      return
-    }
+      contentCache.clear();
+      applyPalette(DEFAULT_PALETTE);
+      setState({ phase: "signed-out" });
+    };
     try {
-      const { needs_setup } = await api.setupStatus()
+      // This open probe also carries the instance's password rule, so fetch
+      // it before choosing a form, including the invite route.
+      const { needs_setup, min_password_length } = await api.setupStatus();
+      setMinPasswordLength(min_password_length);
+      // An invite link is its own entry point: it creates an account, so it
+      // comes before the is-there-an-account question.
+      if (onInviteRoute()) {
+        setState({ phase: "accept" });
+        return;
+      }
       if (needs_setup) {
-        setState({ phase: 'setup' })
-        return
+        setState({ phase: "setup" });
+        return;
       }
-      const user = await api.me()
-      applyPalette(user.theme)
-      setState({ phase: 'ready', user })
+      const user = await api.me();
+      applyPalette(user.theme);
+      setState({ phase: "ready", user });
     } catch (err) {
-      if (err instanceof ApiError && err.problem.status === 401) {
-        signOut()
-        return
+      // Without the probe there is still a usable invite form; everything
+      // else falls back to signing in.
+      if (onInviteRoute()) {
+        setState({ phase: "accept" });
+        return;
       }
-      signOut()
+      if (err instanceof ApiError && err.problem.status === 401) {
+        signOut();
+        return;
+      }
+      signOut();
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    void resolve()
-  }, [resolve])
+    void resolve();
+  }, [resolve]);
 
   // After accepting an invite the account exists and is signed in; drop the
   // invite path from the URL so a refresh lands on the normal app.
   const leaveInvite = useCallback(() => {
-    if (onInviteRoute()) history.replaceState(null, '', '/')
-    void resolve()
-  }, [resolve])
+    if (onInviteRoute()) history.replaceState(null, "", "/");
+    void resolve();
+  }, [resolve]);
 
   switch (state.phase) {
-    case 'loading':
+    case "loading":
       return (
         <div className="grid min-h-dvh place-items-center">
-          <CircleNotchIcon className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+          <CircleNotchIcon
+            className="size-6 animate-spin text-muted-foreground"
+            aria-label="Loading"
+          />
         </div>
-      )
-    case 'setup':
-      return <SignIn mode="setup" onDone={resolve} />
-    case 'accept':
-      return <SignIn mode="accept" onDone={leaveInvite} />
-    case 'signed-out':
-      return <SignIn mode="login" onDone={resolve} />
-    case 'ready':
-      return <Browser user={state.user} onSignedOut={resolve} />
+      );
+    case "setup":
+      return (
+        <SignIn
+          mode="setup"
+          minPasswordLength={minPasswordLength}
+          onDone={resolve}
+        />
+      );
+    case "accept":
+      return (
+        <SignIn
+          mode="accept"
+          minPasswordLength={minPasswordLength}
+          onDone={leaveInvite}
+        />
+      );
+    case "signed-out":
+      return (
+        <SignIn
+          mode="login"
+          minPasswordLength={minPasswordLength}
+          onDone={resolve}
+        />
+      );
+    case "ready":
+      return <Browser user={state.user} onSignedOut={resolve} />;
   }
 }
 
@@ -97,5 +130,5 @@ export function Empty({ title, detail }: { title: string; detail?: string }) {
         {detail && <p className="text-sm text-muted-foreground">{detail}</p>}
       </div>
     </div>
-  )
+  );
 }

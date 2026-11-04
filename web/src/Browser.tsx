@@ -31,9 +31,9 @@ import {
   SlidersHorizontalIcon,
   SquaresFourIcon,
   TrashIcon,
-  XIcon
-} from '@phosphor-icons/react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+  XIcon,
+} from "@phosphor-icons/react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   useCallback,
   useEffect,
@@ -43,21 +43,24 @@ import {
   type DragEvent,
   type MouseEvent,
   type ReactNode,
-} from 'react'
-import { toast } from 'sonner'
+} from "react";
+import { toast } from "sonner";
 
-import { AccessDialog } from '@/components/access-dialog'
-import { ActivityScreen } from '@/components/activity-screen'
-import { Sidebar } from '@/components/app-sidebar'
-import { CreateContextItems, type CreateActions } from '@/components/create-menu'
-import { FileInfoDialog } from '@/components/file-info-dialog'
-import { MembersScreen } from '@/components/members-screen'
-import { PreviewOverlay } from '@/components/preview-overlay'
-import { SettingsScreen } from '@/components/settings-screen'
-import { ShareDialog } from '@/components/share-dialog'
-import { SharesScreen } from '@/components/shares-screen'
-import { Thumbnail } from '@/components/thumbnail'
-import { TrashScreen } from '@/components/trash-screen'
+import { AccessDialog } from "@/components/access-dialog";
+import { ActivityScreen } from "@/components/activity-screen";
+import { Sidebar } from "@/components/app-sidebar";
+import {
+  CreateContextItems,
+  type CreateActions,
+} from "@/components/create-menu";
+import { FileInfoDialog } from "@/components/file-info-dialog";
+import { MembersScreen } from "@/components/members-screen";
+import { PreviewOverlay } from "@/components/preview-overlay";
+import { SettingsScreen } from "@/components/settings-screen";
+import { ShareDialog } from "@/components/share-dialog";
+import { SharesScreen } from "@/components/shares-screen";
+import { Thumbnail } from "@/components/thumbnail";
+import { TrashScreen } from "@/components/trash-screen";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,8 +70,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -79,14 +82,14 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from '@/components/ui/context-menu'
+} from "@/components/ui/context-menu";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,22 +98,41 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
-import { FADE_MS, INTERACTIVE_SELECTOR, useBoxSelect, type BoxRect } from '@/lib/box-select'
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  FADE_MS,
+  INTERACTIVE_SELECTOR,
+  useBoxSelect,
+  type BoxRect,
+} from "@/lib/box-select";
 import {
   colorHex,
   colorLabel,
   COLORS,
   frameClasses,
   panelClasses,
-  type ColorId
-} from '@/lib/colors'
-import { clearDragGhost, dropEntries, installDragGhost, readEntries } from '@/lib/dnd'
-import { canThumb, categoryLabel, childLabel, displayName, entryKind, entryPerms, formatRelativeTime, shortName } from '@/lib/files'
-import { Empty } from './App'
+  type ColorId,
+} from "@/lib/colors";
+import {
+  clearDragGhost,
+  dropEntries,
+  installDragGhost,
+  readEntries,
+} from "@/lib/dnd";
+import {
+  canThumb,
+  categoryLabel,
+  childLabel,
+  displayName,
+  entryKind,
+  entryPerms,
+  formatRelativeTime,
+  shortName,
+} from "@/lib/files";
+import { Empty } from "./App";
 import {
   api,
   ApiError,
@@ -123,158 +145,216 @@ import {
   type PermSet,
   type Space,
   type User,
-} from './api'
-import { runPool, uploadFile, type UploadProgress } from './upload'
+} from "./api";
+import { runPool, uploadFile, type UploadProgress } from "./upload";
 
 /** rowHeight mirrors the list row height (h-12); headerHeight the group labels. */
-const rowHeight = 48
-const headerHeight = 36
+const rowHeight = 48;
+const headerHeight = 36;
 
-type SortKey = 'name' | 'size' | 'modified'
-type SortDir = 'asc' | 'desc'
-type View = 'list' | 'grid'
-type GroupBy = 'none' | 'type' | 'date'
+type SortKey = "name" | "size" | "modified";
+type SortDir = "asc" | "desc";
+type View = "list" | "grid";
+type GroupBy = "none" | "type" | "date";
 
 /** Grid tile sizes as a fixed set, the way a desktop explorer offers small /
  *  medium / large rather than a continuous slider. `icon` is a literal class so
  *  Tailwind keeps it in the build. */
-type GridSize = { min: string; icon: string; label: string }
+type GridSize = { min: string; icon: string; label: string };
 const GRID_SIZES: GridSize[] = [
-  { min: '7rem', icon: 'size-12', label: 'Small' },
-  { min: '10rem', icon: 'size-16', label: 'Medium' },
-  { min: '14rem', icon: 'size-20', label: 'Large' },
-]
+  { min: "7rem", icon: "size-12", label: "Small" },
+  { min: "10rem", icon: "size-16", label: "Medium" },
+  { min: "14rem", icon: "size-20", label: "Large" },
+];
 
 const TYPE_ORDER = [
-  'Folders', 'Images', 'Documents', 'Spreadsheets', 'Presentations',
-  'Videos', 'Audio', 'Archives', 'Code', 'Other',
-]
-const DATE_ORDER = ['Today', 'Yesterday', 'Earlier this week', 'Earlier this month', 'Older']
+  "Folders",
+  "Images",
+  "Documents",
+  "Spreadsheets",
+  "Presentations",
+  "Videos",
+  "Audio",
+  "Archives",
+  "Code",
+  "Other",
+];
+const DATE_ORDER = [
+  "Today",
+  "Yesterday",
+  "Earlier this week",
+  "Earlier this month",
+  "Older",
+];
 
-const SETTINGS_KEY = 'bytewing-view'
+const SETTINGS_KEY = "bytewing-view";
 
 type Settings = {
-  view: View
-  gridSize: number
-  group: GroupBy
-  sortKey: SortKey
-  sortDir: SortDir
-}
+  view: View;
+  gridSize: number;
+  group: GroupBy;
+  sortKey: SortKey;
+  sortDir: SortDir;
+};
 
 function loadSettings(): Settings {
-  const fallback: Settings = { view: 'list', gridSize: 1, group: 'none', sortKey: 'name', sortDir: 'asc' }
+  const fallback: Settings = {
+    view: "list",
+    gridSize: 1,
+    group: "none",
+    sortKey: "name",
+    sortDir: "asc",
+  };
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    if (!raw) return fallback
-    const p = JSON.parse(raw) as Partial<Settings>
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return fallback;
+    const p = JSON.parse(raw) as Partial<Settings>;
     return {
-      view: (['list', 'grid'] as View[]).includes(p.view!) ? p.view! : fallback.view,
+      view: (["list", "grid"] as View[]).includes(p.view!)
+        ? p.view!
+        : fallback.view,
       gridSize:
-        Number.isInteger(p.gridSize) && p.gridSize! >= 0 && p.gridSize! < GRID_SIZES.length
+        Number.isInteger(p.gridSize) &&
+        p.gridSize! >= 0 &&
+        p.gridSize! < GRID_SIZES.length
           ? p.gridSize!
           : fallback.gridSize,
-      group: (['none', 'type', 'date'] as GroupBy[]).includes(p.group!) ? p.group! : fallback.group,
-      sortKey: (['name', 'size', 'modified'] as SortKey[]).includes(p.sortKey!) ? p.sortKey! : fallback.sortKey,
-      sortDir: p.sortDir === 'desc' ? 'desc' : 'asc',
-    }
+      group: (["none", "type", "date"] as GroupBy[]).includes(p.group!)
+        ? p.group!
+        : fallback.group,
+      sortKey: (["name", "size", "modified"] as SortKey[]).includes(p.sortKey!)
+        ? p.sortKey!
+        : fallback.sortKey,
+      sortDir: p.sortDir === "desc" ? "desc" : "asc",
+    };
   } catch {
-    return fallback
+    return fallback;
   }
 }
 
-type ClickIntent = 'replace' | 'toggle' | 'range'
+type ClickIntent = "replace" | "toggle" | "range";
 
-type Screen = 'files' | 'trash' | 'shared' | 'shared-with-me' | 'members' | 'settings' | 'activity'
+type Screen =
+  | "files"
+  | "trash"
+  | "shared"
+  | "shared-with-me"
+  | "members"
+  | "settings"
+  | "activity";
 
 const SCREENS: readonly string[] = [
-  'files', 'trash', 'shared', 'shared-with-me', 'members', 'settings', 'activity',
-]
+  "files",
+  "trash",
+  "shared",
+  "shared-with-me",
+  "members",
+  "settings",
+  "activity",
+];
 
 function parseLocation(): { screen: Screen; path: string | null } {
-  const q = new URLSearchParams(window.location.search)
-  const p = q.get('path')
-  if (p && p.startsWith('/')) return { screen: 'files', path: p }
-  const s = q.get('screen')
-  if (s && (SCREENS as readonly string[]).includes(s)) return { screen: s as Screen, path: null }
-  return { screen: 'files', path: null }
+  const q = new URLSearchParams(window.location.search);
+  const p = q.get("path");
+  if (p && p.startsWith("/")) return { screen: "files", path: p };
+  const s = q.get("screen");
+  if (s && (SCREENS as readonly string[]).includes(s))
+    return { screen: s as Screen, path: null };
+  return { screen: "files", path: null };
 }
 
 type EntryActions = {
-  select: (entry: Entry, intent: ClickIntent) => void
-  open: (entry: Entry) => void
-  goToOriginal: (entry: Entry) => void
-  completeReveal: () => void
-  download: (entry: Entry) => void
-  downloadZip: (entry: Entry) => void
-  checksum: (entry: Entry) => void
-  info: (entry: Entry) => void
-  extract: (entry: Entry) => void
-  share: (entry: Entry) => void
-  manageAccess: (entry: Entry) => void
-  canManageAccess: boolean
-  copy: (entry: Entry) => void
-  cut: (entry: Entry) => void
-  paste: () => void
-  pasteRef: () => void
-  rename: (entry: Entry) => void
-  renaming: string | null
-  commitRename: (entry: Entry, name: string) => void
-  cancelRename: () => void
-  remove: (entry: Entry) => void
-  contextTarget: (entry: Entry) => void
-  setColor: (entry: Entry, color: ColorId | null) => void
-  isSelected: (entry: Entry) => boolean
-  isCut: (entry: Entry) => boolean
-  childCount: (path: string) => ChildCount | null | undefined
-  selectBox: (paths: string[]) => void
-  selectedPaths: () => string[]
-  isShared: (entry: Entry) => boolean
-  canPaste: boolean
-  canPasteRef: boolean
+  select: (entry: Entry, intent: ClickIntent) => void;
+  open: (entry: Entry) => void;
+  goToOriginal: (entry: Entry) => void;
+  completeReveal: () => void;
+  download: (entry: Entry) => void;
+  downloadZip: (entry: Entry) => void;
+  checksum: (entry: Entry) => void;
+  info: (entry: Entry) => void;
+  extract: (entry: Entry) => void;
+  share: (entry: Entry) => void;
+  manageAccess: (entry: Entry) => void;
+  canManageAccess: boolean;
+  copy: (entry: Entry) => void;
+  cut: (entry: Entry) => void;
+  paste: () => void;
+  pasteRef: () => void;
+  rename: (entry: Entry) => void;
+  renaming: string | null;
+  commitRename: (entry: Entry, name: string) => void;
+  cancelRename: () => void;
+  remove: (entry: Entry) => void;
+  contextTarget: (entry: Entry) => void;
+  setColor: (entry: Entry, color: ColorId | null) => void;
+  isSelected: (entry: Entry) => boolean;
+  isCut: (entry: Entry) => boolean;
+  childCount: (path: string) => ChildCount | null | undefined;
+  selectBox: (paths: string[]) => void;
+  selectedPaths: () => string[];
+  isShared: (entry: Entry) => boolean;
+  canPaste: boolean;
+  canPasteRef: boolean;
   // Permissions in the current folder, applied to its entries so the menus offer
   // only what the caller can actually do.
-  perms: PermSet
+  perms: PermSet;
   // Drag-to-move: dragPaths is what a drag starting on an entry carries (the
   // selection, or just that entry); moveInto drops those paths into a folder.
-  dragPaths: (entry: Entry) => string[]
+  dragPaths: (entry: Entry) => string[];
   // tileSize is the grid's current icon size, so a multi-item drag preview is
   // built at the same size as the tiles on screen.
-  tileSize: GridSize
-  moveInto: (dirPath: string, dirName: string, paths: string[]) => void
-  dropTarget: string | null
-  setDropTarget: (path: string | null) => void
-}
+  tileSize: GridSize;
+  moveInto: (dirPath: string, dirName: string, paths: string[]) => void;
+  dropTarget: string | null;
+  setDropTarget: (path: string | null) => void;
+};
 
-const AUTO_REFRESH_MS = 30_000
+const AUTO_REFRESH_MS = 30_000;
 // min gap after coming back to the tab
-const AUTO_REFRESH_MIN_GAP_MS = 5_000
+const AUTO_REFRESH_MIN_GAP_MS = 5_000;
 
 /** MOVE_MIME marks an in-app drag so it is told apart from an OS file drag (an
  *  upload). The payload is the JSON array of paths being moved. */
-const MOVE_MIME = 'application/x-bytewing-move'
+const MOVE_MIME = "application/x-bytewing-move";
 
 /** Clipboard holds entries cut or copied, waiting to be pasted into a folder. */
-type Clipboard = { mode: 'copy' | 'cut'; entries: Entry[] }
+type Clipboard = { mode: "copy" | "cut"; entries: Entry[] };
 
-const ALL_PERMS: PermSet = { read: true, write: true, delete: true, share: true, manage: true }
-const NO_PERMS: PermSet = { read: false, write: false, delete: false, share: false, manage: false }
+const ALL_PERMS: PermSet = {
+  read: true,
+  write: true,
+  delete: true,
+  share: true,
+  manage: true,
+};
+const NO_PERMS: PermSet = {
+  read: false,
+  write: false,
+  delete: false,
+  share: false,
+  manage: false,
+};
 
 /** TrackedJob follows a background copy, extraction or download the interface is
  *  polling. bytesDone/Total and the sample fields let the panel show a live
  *  transfer rate, computed from the change between two polls. */
 type TrackedJob = {
-  id: number
-  name: string
-  status: Job['status']
-  progress: number
-  kind: 'copy' | 'extract' | 'fetch'
-  bytesDone: number
-  bytesTotal: number
-  sampledAt: number // ms timestamp of the sample bytesDone was read at
-  speed: number // bytes/sec, smoothed; 0 until a rate can be measured
-}
+  id: number;
+  name: string;
+  status: Job["status"];
+  progress: number;
+  kind: "copy" | "extract" | "fetch";
+  bytesDone: number;
+  bytesTotal: number;
+  sampledAt: number; // ms timestamp of the sample bytesDone was read at
+  speed: number; // bytes/sec, smoothed; 0 until a rate can be measured
+};
 
-function newTracked(job: Job, kind: TrackedJob['kind'], name: string): TrackedJob {
+function newTracked(
+  job: Job,
+  kind: TrackedJob["kind"],
+  name: string,
+): TrackedJob {
   return {
     id: job.id,
     name,
@@ -285,233 +365,261 @@ function newTracked(job: Job, kind: TrackedJob['kind'], name: string): TrackedJo
     bytesTotal: job.bytes_total,
     sampledAt: Date.now(),
     speed: 0,
-  }
+  };
 }
 
-type Group = { key: string; label: string; entries: Entry[] }
-type ListItem = { type: 'header'; id: string; label: string; count: number } | { type: 'entry'; entry: Entry }
+type Group = { key: string; label: string; entries: Entry[] };
+type ListItem =
+  | { type: "header"; id: string; label: string; count: number }
+  | { type: "entry"; entry: Entry };
 
 type DialogState =
-  | { kind: 'new-folder' }
-  | { kind: 'fetch-url' }
-  | { kind: 'delete'; entries: Entry[] }
-  | { kind: 'share'; entry: Entry }
-  | { kind: 'access'; entry: Entry }
-  | { kind: 'info'; entry: Entry }
+  | { kind: "new-folder" }
+  | { kind: "fetch-url" }
+  | { kind: "delete"; entries: Entry[] }
+  | { kind: "share"; entry: Entry }
+  | { kind: "access"; entry: Entry }
+  | { kind: "info"; entry: Entry };
 
-export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => void }) {
-  const homePath = user.is_admin ? '/' : `/members/${user.username}`
-  const [initialLocation] = useState(parseLocation)
-  const [path, setPath] = useState(() => initialLocation.path ?? homePath)
-  const [entries, setEntries] = useState<Entry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [transfers, setTransfers] = useState<UploadProgress[]>([])
-  const [dragging, setDragging] = useState(false)
-  const [space, setSpace] = useState<Space | null>(null)
-  const [query, setQuery] = useState('')
-  const [view, setView] = useState<View>(() => loadSettings().view)
-  const [gridSize, setGridSize] = useState(() => loadSettings().gridSize)
-  const [group, setGroup] = useState<GroupBy>(() => loadSettings().group)
+export function Browser({
+  user,
+  onSignedOut,
+}: {
+  user: User;
+  onSignedOut: () => void;
+}) {
+  const homePath = user.is_admin ? "/" : `/members/${user.username}`;
+  const [initialLocation] = useState(parseLocation);
+  const [path, setPath] = useState(() => initialLocation.path ?? homePath);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [transfers, setTransfers] = useState<UploadProgress[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const [space, setSpace] = useState<Space | null>(null);
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<View>(() => loadSettings().view);
+  const [gridSize, setGridSize] = useState(() => loadSettings().gridSize);
+  const [group, setGroup] = useState<GroupBy>(() => loadSettings().group);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>(() => {
-    const s = loadSettings()
-    return { key: s.sortKey, dir: s.sortDir }
-  })
-  const [dialog, setDialog] = useState<DialogState | null>(null)
-  const [selection, setSelection] = useState<Set<string>>(() => new Set())
-  const [anchor, setAnchor] = useState<string | null>(null)
+    const s = loadSettings();
+    return { key: s.sortKey, dir: s.sortDir };
+  });
+  const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [selection, setSelection] = useState<Set<string>>(() => new Set());
+  const [anchor, setAnchor] = useState<string | null>(null);
   // focus separate from selection
-  const [focusPath, setFocusPath] = useState<string | null>(null)
-  const [focusSeq, setFocusSeq] = useState(0)
+  const [focusPath, setFocusPath] = useState<string | null>(null);
+  const [focusSeq, setFocusSeq] = useState(0);
   const focusEntry = useCallback((p: string | null) => {
-    setFocusPath(p)
-    setFocusSeq((n) => n + 1)
-  }, [])
-  const [screen, setScreen] = useState<Screen>(() => initialLocation.screen)
-  const [preview, setPreview] = useState<Entry | null>(null)
-  const [renaming, setRenaming] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [inlinePreview, setInlinePreview] = useState(false)
-  const [objectStorage, setObjectStorage] = useState(false)
-  const [urlFetch, setUrlFetch] = useState(false)
-  const [counts, setCounts] = useState<Record<string, ChildCount | null>>({})
-  const [version, setVersion] = useState('')
-  const [sharedPaths, setSharedPaths] = useState<Set<string>>(() => new Set())
-  const [clipboard, setClipboard] = useState<Clipboard | null>(null)
-  const [dropTarget, setDropTarget] = useState<string | null>(null)
-  const [searchResults, setSearchResults] = useState<Entry[] | null>(null)
-  const [searching, setSearching] = useState(false)
-  const [searchTruncated, setSearchTruncated] = useState(false)
-  const searchSeq = useRef(0)
-  const [jobs, setJobs] = useState<TrackedJob[]>([])
+    setFocusPath(p);
+    setFocusSeq((n) => n + 1);
+  }, []);
+  const [screen, setScreen] = useState<Screen>(() => initialLocation.screen);
+  const [preview, setPreview] = useState<Entry | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [inlinePreview, setInlinePreview] = useState(false);
+  const [objectStorage, setObjectStorage] = useState(false);
+  const [urlFetch, setUrlFetch] = useState(false);
+  const [minPasswordLength, setMinPasswordLength] = useState(10);
+  const [counts, setCounts] = useState<Record<string, ChildCount | null>>({});
+  const [version, setVersion] = useState("");
+  const [sharedPaths, setSharedPaths] = useState<Set<string>>(() => new Set());
+  const [clipboard, setClipboard] = useState<Clipboard | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<Entry[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchTruncated, setSearchTruncated] = useState(false);
+  const searchSeq = useRef(0);
+  const [jobs, setJobs] = useState<TrackedJob[]>([]);
   // What the caller may do in the current folder, used to show only the actions
   // they can perform. An admin holds everything; the server stays the authority.
-  const [perms, setPerms] = useState<PermSet>(user.is_admin ? ALL_PERMS : NO_PERMS)
+  const [perms, setPerms] = useState<PermSet>(
+    user.is_admin ? ALL_PERMS : NO_PERMS,
+  );
 
-  const fileInput = useRef<HTMLInputElement>(null)
-  const dirInput = useRef<HTMLInputElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null);
+  const dirInput = useRef<HTMLInputElement>(null);
   // One controller per in-flight or queued upload, so the panel's cancel
   // button stops the bytes now rather than letting the queue drain.
-  const uploadControllers = useRef(new Map<string, AbortController>())
-  const pathRef = useRef(path)
-  pathRef.current = path
-  const lastRefreshAt = useRef(Date.now())
-  const revealRef = useRef<{ dir: string; path: string } | null>(null)
+  const uploadControllers = useRef(new Map<string, AbortController>());
+  const pathRef = useRef(path);
+  pathRef.current = path;
+  const lastRefreshAt = useRef(Date.now());
+  const revealRef = useRef<{ dir: string; path: string } | null>(null);
 
   useEffect(() => {
     localStorage.setItem(
       SETTINGS_KEY,
-      JSON.stringify({ view, gridSize, group, sortKey: sort.key, sortDir: sort.dir }),
-    )
-  }, [view, gridSize, group, sort])
+      JSON.stringify({
+        view,
+        gridSize,
+        group,
+        sortKey: sort.key,
+        sortDir: sort.dir,
+      }),
+    );
+  }, [view, gridSize, group, sort]);
 
   const clearSelection = useCallback(() => {
-    setSelection(new Set())
-    setAnchor(null)
-    setFocusPath(null)
-  }, [])
+    setSelection(new Set());
+    setAnchor(null);
+    setFocusPath(null);
+  }, []);
 
   useEffect(() => {
-    if (focusPath) return
-    const el = document.activeElement
-    if (el instanceof HTMLElement && el.closest('[data-entry-path]')) el.blur()
-  }, [focusPath])
+    if (focusPath) return;
+    const el = document.activeElement;
+    if (el instanceof HTMLElement && el.closest("[data-entry-path]")) el.blur();
+  }, [focusPath]);
 
   const selectBox = useCallback((paths: string[]) => {
-    setSelection(new Set(paths))
-    setAnchor(paths.length > 0 ? paths[paths.length - 1]! : null)
-  }, [])
+    setSelection(new Set(paths));
+    setAnchor(paths.length > 0 ? paths[paths.length - 1]! : null);
+  }, []);
 
   // box select covers the whole browse area, breadcrumb bar included
-  const box = useBoxSelect({ snapshot: () => [...selection], apply: selectBox })
+  const box = useBoxSelect({
+    snapshot: () => [...selection],
+    apply: selectBox,
+  });
 
   // load fetches a folder's listing. A silent load refreshes the entries in
   // place without the loading spinner — used while uploading, where flashing the
   // whole list to a spinner after every file reads as flicker. React reconciles
   // the rows by path, so a silent refresh updates only what changed.
-  const load = useCallback(async (target: string, opts?: { silent?: boolean }) => {
-    const silent = opts?.silent ?? false
-    if (!silent) setLoading(true)
-    setError('')
-    try {
-      const listing = await api.list(target)
-      setEntries(listing.entries)
-      lastRefreshAt.current = Date.now()
-      const reveal = revealRef.current
-      if (reveal && reveal.dir === target) {
-        revealRef.current = null
-        setSelection(new Set([reveal.path]))
-        setAnchor(reveal.path)
-        focusEntry(reveal.path)
+  const load = useCallback(
+    async (target: string, opts?: { silent?: boolean }) => {
+      const silent = opts?.silent ?? false;
+      if (!silent) setLoading(true);
+      setError("");
+      try {
+        const listing = await api.list(target);
+        setEntries(listing.entries);
+        lastRefreshAt.current = Date.now();
+        const reveal = revealRef.current;
+        if (reveal && reveal.dir === target) {
+          revealRef.current = null;
+          setSelection(new Set([reveal.path]));
+          setAnchor(reveal.path);
+          focusEntry(reveal.path);
+        }
+      } catch (err) {
+        if (silent) return; // a transient refresh failure must not blank the view
+        setEntries([]);
+        setError(
+          err instanceof ApiError ? err.message : "Could not read this folder.",
+        );
+      } finally {
+        if (!silent) setLoading(false);
       }
-    } catch (err) {
-      if (silent) return // a transient refresh failure must not blank the view
-      setEntries([])
-      setError(err instanceof ApiError ? err.message : 'Could not read this folder.')
-    } finally {
-      if (!silent) setLoading(false)
-    }
-  }, [focusEntry])
+    },
+    [focusEntry],
+  );
 
   const refreshSpace = useCallback(async () => {
     try {
-      setSpace(await api.space())
+      setSpace(await api.space());
     } catch {
       // The gauge is informational; its absence must not break browsing.
     }
-  }, [])
+  }, []);
 
   const refreshShares = useCallback(async () => {
     try {
-      const { shares } = await api.listShares()
-      setSharedPaths(new Set(shares.map((s) => s.path)))
+      const { shares } = await api.listShares();
+      setSharedPaths(new Set(shares.map((s) => s.path)));
     } catch {
       // The share badges are a hint; failing to load them must not break browsing.
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     // Navigating shows the spinner, never the previous folder: same-folder
     // refreshes stay silent and update in place (see load's silent mode).
-    setEntries([])
-    setCounts({})
-    void load(path)
-    clearSelection()
-    setPreview(null)
-    setRenaming(null)
-    setFocusPath(null)
-  }, [path, load, clearSelection])
+    setEntries([]);
+    setCounts({});
+    void load(path);
+    clearSelection();
+    setPreview(null);
+    setRenaming(null);
+    setFocusPath(null);
+  }, [path, load, clearSelection]);
 
   // auto refresh, skipped when tab is hidden
   useEffect(() => {
     const refresh = () => {
-      if (document.hidden) return
-      if (Date.now() - lastRefreshAt.current < AUTO_REFRESH_MIN_GAP_MS) return
-      void load(pathRef.current, { silent: true })
-    }
+      if (document.hidden) return;
+      if (Date.now() - lastRefreshAt.current < AUTO_REFRESH_MIN_GAP_MS) return;
+      void load(pathRef.current, { silent: true });
+    };
     const onWake = () => {
-      if (!document.hidden) refresh()
-    }
-    const tick = window.setInterval(refresh, AUTO_REFRESH_MS)
-    document.addEventListener('visibilitychange', onWake)
-    window.addEventListener('focus', onWake)
+      if (!document.hidden) refresh();
+    };
+    const tick = window.setInterval(refresh, AUTO_REFRESH_MS);
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
     return () => {
-      window.clearInterval(tick)
-      document.removeEventListener('visibilitychange', onWake)
-      window.removeEventListener('focus', onWake)
-    }
-  }, [load])
+      window.clearInterval(tick);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+    };
+  }, [load]);
 
-  const firstLocation = useRef(true)
+  const firstLocation = useRef(true);
   useEffect(() => {
-    const want = screen === 'files' ? `?path=${encodeURIComponent(path)}` : `?screen=${screen}`
+    const want =
+      screen === "files"
+        ? `?path=${encodeURIComponent(path)}`
+        : `?screen=${screen}`;
     if (window.location.search === want) {
-      firstLocation.current = false
-      return
+      firstLocation.current = false;
+      return;
     }
     if (firstLocation.current) {
-      firstLocation.current = false
-      window.history.replaceState(null, '', want)
+      firstLocation.current = false;
+      window.history.replaceState(null, "", want);
     } else {
-      window.history.pushState(null, '', want)
+      window.history.pushState(null, "", want);
     }
-  }, [screen, path])
+  }, [screen, path]);
 
   useEffect(() => {
     function onPop() {
-      const loc = parseLocation()
-      setQuery('')
-      setPreview(null)
-      clearSelection()
-      if (loc.screen === 'files') {
-        setScreen('files')
-        if (loc.path) setPath(loc.path)
+      const loc = parseLocation();
+      setQuery("");
+      setPreview(null);
+      clearSelection();
+      if (loc.screen === "files") {
+        setScreen("files");
+        if (loc.path) setPath(loc.path);
       } else {
-        setScreen(loc.screen)
+        setScreen(loc.screen);
       }
     }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [clearSelection])
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [clearSelection]);
 
   useEffect(() => {
-    void refreshSpace()
-  }, [refreshSpace])
+    void refreshSpace();
+  }, [refreshSpace]);
 
   // Load the caller's permissions for the folder being browsed. Admins hold
   // everything, so they skip the round trip entirely.
   useEffect(() => {
-    if (user.is_admin) return
-    if (screen !== 'files') return
-    let live = true
+    if (user.is_admin) return;
+    if (screen !== "files") return;
+    let live = true;
     api
       .effectivePermissions(path)
       .then((p) => live && setPerms(p))
-      .catch(() => live && setPerms(NO_PERMS))
+      .catch(() => live && setPerms(NO_PERMS));
     return () => {
-      live = false
-    }
-  }, [path, screen, user.is_admin])
+      live = false;
+    };
+  }, [path, screen, user.is_admin]);
 
   useEffect(() => {
     // Whether files render in place depends on the instance serving them
@@ -519,50 +627,51 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
     api
       .config()
       .then((c) => {
-        setInlinePreview(c.inline_preview)
-        setObjectStorage(c.object_storage)
-        setUrlFetch(c.url_fetch)
-        setVersion(c.version)
+        setInlinePreview(c.inline_preview);
+        setObjectStorage(c.object_storage);
+        setUrlFetch(c.url_fetch);
+        setMinPasswordLength(c.min_password_length);
+        setVersion(c.version);
       })
-      .catch(() => undefined)
-  }, [])
+      .catch(() => undefined);
+  }, []);
 
   // Refresh which files are shared on entering the files view, so a link
   // revoked in the Shared section clears its badge on return.
   useEffect(() => {
-    if (screen === 'files') void refreshShares()
-  }, [screen, refreshShares])
+    if (screen === "files") void refreshShares();
+  }, [screen, refreshShares]);
 
   // The search box runs a recursive, server-side search from the current folder,
   // debounced. An empty query returns to the ordinary listing; a stale request's
   // result is dropped by comparing the sequence it was issued under.
   useEffect(() => {
-    const trimmed = query.trim()
+    const trimmed = query.trim();
     if (!trimmed) {
-      setSearchResults(null)
-      setSearching(false)
-      return
+      setSearchResults(null);
+      setSearching(false);
+      return;
     }
-    setSearching(true)
-    const seq = ++searchSeq.current
+    setSearching(true);
+    const seq = ++searchSeq.current;
     const timer = window.setTimeout(async () => {
       try {
-        const res = await api.search(trimmed, path)
+        const res = await api.search(trimmed, path);
         if (searchSeq.current === seq) {
-          setSearchResults(res.results)
-          setSearchTruncated(res.truncated)
+          setSearchResults(res.results);
+          setSearchTruncated(res.truncated);
         }
       } catch {
         if (searchSeq.current === seq) {
-          setSearchResults([])
-          setSearchTruncated(false)
+          setSearchResults([]);
+          setSearchTruncated(false);
         }
       } finally {
-        if (searchSeq.current === seq) setSearching(false)
+        if (searchSeq.current === seq) setSearching(false);
       }
-    }, 250)
-    return () => window.clearTimeout(timer)
-  }, [query, path])
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [query, path]);
 
   // runUpload sends a batch to target/<name>, where a name may be a bare file
   // name or a nested path. One queue and one progress path serve a plain import,
@@ -571,14 +680,14 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
   // instead of queueing behind one big file.
   const runUpload = useCallback(
     async (items: { file: File; name: string }[], target: string) => {
-      if (items.length === 0) return
+      if (items.length === 0) return;
       const queued = items.map(({ file, name }) => {
-        const id = crypto.randomUUID()
-        const controller = new AbortController()
-        uploadControllers.current.set(id, controller)
-        return { id, file, name, signal: controller.signal }
-      })
-      const maxFiles = 3
+        const id = crypto.randomUUID();
+        const controller = new AbortController();
+        uploadControllers.current.set(id, controller);
+        return { id, file, name, signal: controller.signal };
+      });
+      const maxFiles = 3;
 
       // Show the whole batch at once, as a queue, so someone sees every file
       // they meant to send rather than only the one in flight.
@@ -589,87 +698,95 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
           name,
           sent: 0,
           total: file.size,
-          status: 'queued' as const,
+          status: "queued" as const,
         })),
-      ])
+      ]);
 
       // Reflecting each finished file with its own reload flickers on a big
       // batch, so refreshes are coalesced: at most one every so often during the
       // run, plus a guaranteed one at the end. Both are silent — no spinner.
-      let lastRefresh = 0
+      let lastRefresh = 0;
       const refresh = (force: boolean) => {
-        const now = performance.now()
-        if (!force && now - lastRefresh < 800) return
-        lastRefresh = now
-        void refreshSpace()
-        if (pathRef.current === target) void load(target, { silent: true })
-      }
+        const now = performance.now();
+        if (!force && now - lastRefresh < 800) return;
+        lastRefresh = now;
+        void refreshSpace();
+        if (pathRef.current === target) void load(target, { silent: true });
+      };
 
       // Files complete in whatever order they finish; the panel rows are
       // keyed by id, and the refresh is time-coalesced, so order is irrelevant.
       const uploads = queued.map(({ id, file, name, signal }) => async () => {
         const update = (patch: Partial<UploadProgress>) =>
-          setTransfers((current) => current.map((t) => (t.id === id ? { ...t, ...patch } : t)))
+          setTransfers((current) =>
+            current.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+          );
 
         // A queued file cancelled before its turn never touches the network.
         if (signal.aborted) {
-          update({ status: 'cancelled', speed: 0 })
-          uploadControllers.current.delete(id)
-          return
+          update({ status: "cancelled", speed: 0 });
+          uploadControllers.current.delete(id);
+          return;
         }
-        update({ status: 'uploading' })
+        update({ status: "uploading" });
         try {
           await uploadFile(
             file,
             joinPath(target, name),
             (sent, speed) => update({ sent, speed }),
             signal,
-          )
-          update({ status: 'done', sent: file.size, speed: 0 })
+          );
+          update({ status: "done", sent: file.size, speed: 0 });
         } catch (err) {
           // An abort is a decision, not a failure: it reads as cancelled,
           // never as an error. The abandoned server session expires on its
           // own, exactly as if the tab had closed mid-upload.
-          if (signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
-            update({ status: 'cancelled', speed: 0 })
+          if (
+            signal.aborted ||
+            (err instanceof DOMException && err.name === "AbortError")
+          ) {
+            update({ status: "cancelled", speed: 0 });
           } else {
-            update({ status: 'error', error: err instanceof Error ? err.message : 'failed' })
+            update({
+              status: "error",
+              error: err instanceof Error ? err.message : "failed",
+            });
           }
         } finally {
-          uploadControllers.current.delete(id)
+          uploadControllers.current.delete(id);
         }
 
-        refresh(false)
-      })
-      await runPool(uploads, maxFiles)
-      refresh(true)
+        refresh(false);
+      });
+      await runPool(uploads, maxFiles);
+      refresh(true);
     },
     [load, refreshSpace],
-  )
+  );
 
   // uploadTree uploads files whose names carry a relative path, creating the
   // directories they need first — MkdirAll makes parents, and an existing one is
   // simply merged into. Backs both the folder picker and a dropped folder.
   const uploadTree = useCallback(
     async (items: { file: File; name: string }[]) => {
-      if (items.length === 0) return
-      const target = path
-      const dirs = new Set<string>()
+      if (items.length === 0) return;
+      const target = path;
+      const dirs = new Set<string>();
       for (const { name } of items) {
-        const cut = name.lastIndexOf('/')
-        if (cut > 0) dirs.add(name.slice(0, cut))
+        const cut = name.lastIndexOf("/");
+        if (cut > 0) dirs.add(name.slice(0, cut));
       }
       for (const dir of dirs) {
         try {
-          await api.mkdir(joinPath(target, dir))
+          await api.mkdir(joinPath(target, dir));
         } catch {
           // An existing directory is fine — the tree is being merged into it.
         }
       }
-      await runUpload(items, target)
+      await runUpload(items, target);
     },
     [path, runUpload],
-  )
+  );
 
   // Queued rows flip to cancelled at once instead of waiting for their turn;
   // the runUpload loop sees the aborted signal and skips them without any
@@ -677,35 +794,42 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
   const markQueuedCancelled = useCallback((ids: Set<string> | null) => {
     setTransfers((current) =>
       current.map((t) =>
-        t.status === 'queued' && (!ids || ids.has(t.id)) ? { ...t, status: 'cancelled' as const, speed: 0 } : t,
+        t.status === "queued" && (!ids || ids.has(t.id))
+          ? { ...t, status: "cancelled" as const, speed: 0 }
+          : t,
       ),
-    )
-  }, [])
+    );
+  }, []);
 
   // cancelTransfers aborts every in-flight request; queued files cancel
   // without any network traffic.
   const cancelTransfers = useCallback(() => {
-    for (const controller of uploadControllers.current.values()) controller.abort()
-    uploadControllers.current.clear()
-    markQueuedCancelled(null)
-  }, [markQueuedCancelled])
+    for (const controller of uploadControllers.current.values())
+      controller.abort();
+    uploadControllers.current.clear();
+    markQueuedCancelled(null);
+  }, [markQueuedCancelled]);
 
   // cancelTransfer stops one file: an in-flight request aborts on the spot,
   // a queued one flips at once. The runUpload loop folds both into the
   // 'cancelled' state.
   const cancelTransfer = useCallback(
     (id: string) => {
-      uploadControllers.current.get(id)?.abort()
-      uploadControllers.current.delete(id)
-      markQueuedCancelled(new Set([id]))
+      uploadControllers.current.get(id)?.abort();
+      uploadControllers.current.delete(id);
+      markQueuedCancelled(new Set([id]));
     },
     [markQueuedCancelled],
-  )
+  );
 
   const upload = useCallback(
-    (files: FileList) => runUpload(Array.from(files).map((file) => ({ file, name: file.name })), path),
+    (files: FileList) =>
+      runUpload(
+        Array.from(files).map((file) => ({ file, name: file.name })),
+        path,
+      ),
     [path, runUpload],
-  )
+  );
 
   // importFolder recreates a picked directory tree: the browser hands us a flat
   // list where each file carries its path relative to the chosen folder.
@@ -714,501 +838,638 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
       uploadTree(
         Array.from(files).map((file) => ({
           file,
-          name: (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name,
+          name:
+            (file as unknown as { webkitRelativePath?: string })
+              .webkitRelativePath || file.name,
         })),
       ),
     [uploadTree],
-  )
+  );
 
   // dropUpload handles a drag-and-drop, descending into any dropped folders via
   // the entries captured in the drop handler. Unlike the folder picker, this
   // needs no native "upload everything from this folder?" confirmation.
   const dropUpload = useCallback(
     async (entries: FileSystemEntry[]) => {
-      const dropped = await readEntries(entries)
-      await uploadTree(dropped.map(({ file, path: name }) => ({ file, name })))
+      const dropped = await readEntries(entries);
+      await uploadTree(dropped.map(({ file, path: name }) => ({ file, name })));
     },
     [uploadTree],
-  )
+  );
 
   const createActions: CreateActions = {
-    newFolder: () => setDialog({ kind: 'new-folder' }),
+    newFolder: () => setDialog({ kind: "new-folder" }),
     importFiles: () => fileInput.current?.click(),
     importFolder: () => dirInput.current?.click(),
-    fetchUrl: () => setDialog({ kind: 'fetch-url' }),
+    fetchUrl: () => setDialog({ kind: "fetch-url" }),
     canFetchUrl: urlFetch,
-  }
+  };
 
   // In search mode the listing is the server's results (which span folders);
   // otherwise it is the current folder's entries.
-  const inSearch = query.trim().length > 0
+  const inSearch = query.trim().length > 0;
   const matched = useMemo(
     () => (inSearch ? (searchResults ?? []) : entries),
     [inSearch, searchResults, entries],
-  )
+  );
 
   useEffect(() => {
-    if (inSearch) return
-    const pending = entries.filter((e) => e.is_dir && counts[e.path] === undefined)
-    if (pending.length === 0) return
-    let live = true
+    if (inSearch) return;
+    const pending = entries.filter(
+      (e) => e.is_dir && counts[e.path] === undefined,
+    );
+    if (pending.length === 0) return;
+    let live = true;
     void runPool(
-      pending.map(
-        (entry) => async () => {
-          try {
-            const c = await api.count(entry.path)
-            if (live) setCounts((cur) => ({ ...cur, [entry.path]: c }))
-          } catch {
-            if (live) setCounts((cur) => ({ ...cur, [entry.path]: null }))
-          }
-        },
-      ),
+      pending.map((entry) => async () => {
+        try {
+          const c = await api.count(entry.path);
+          if (live) setCounts((cur) => ({ ...cur, [entry.path]: c }));
+        } catch {
+          if (live) setCounts((cur) => ({ ...cur, [entry.path]: null }));
+        }
+      }),
       6,
-    )
+    );
     return () => {
-      live = false
-    }
-  }, [entries, counts, inSearch])
+      live = false;
+    };
+  }, [entries, counts, inSearch]);
 
-  const groups = useMemo(() => buildGroups(matched, group, sort), [matched, group, sort])
-  const ordered = useMemo(() => groups.flatMap((g) => g.entries), [groups])
-  const listRows = useMemo(() => flattenGroups(groups), [groups])
-  const selected = useMemo(() => ordered.filter((e) => selection.has(e.path)), [ordered, selection])
+  const groups = useMemo(
+    () => buildGroups(matched, group, sort),
+    [matched, group, sort],
+  );
+  const ordered = useMemo(() => groups.flatMap((g) => g.entries), [groups]);
+  const listRows = useMemo(() => flattenGroups(groups), [groups]);
+  const selected = useMemo(
+    () => ordered.filter((e) => selection.has(e.path)),
+    [ordered, selection],
+  );
   // Arrow-key navigation walks every file, not just previewable ones: any
   // file can be the open preview, including ones with no inline rendering.
-  const previewSiblings = useMemo(() => ordered.filter((e) => !e.is_dir), [ordered])
+  const previewSiblings = useMemo(
+    () => ordered.filter((e) => !e.is_dir),
+    [ordered],
+  );
 
   const download = useCallback(async (entry: Entry) => {
     try {
-      const { url } = await api.downloadLink(entry.path)
+      const { url } = await api.downloadLink(entry.path);
       // Force an attachment: the signed link serves previewable types inline,
       // which is what the preview overlay wants but not a Download click.
-      window.location.href = url + (url.includes('?') ? '&' : '?') + 'download=1'
+      window.location.href =
+        url + (url.includes("?") ? "&" : "?") + "download=1";
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not build a download link.')
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Could not build a download link.",
+      );
     }
-  }, [])
+  }, []);
 
   // downloadZip streams several items or a folder as a single archive.
   const downloadZip = useCallback(async (entries: Entry[]) => {
-    if (entries.length === 0) return
+    if (entries.length === 0) return;
     try {
-      const { url } = await api.bundleLink(entries.map((e) => e.path))
-      window.location.href = url
+      const { url } = await api.bundleLink(entries.map((e) => e.path));
+      window.location.href = url;
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not build the download.')
+      toast.error(
+        err instanceof ApiError ? err.message : "Could not build the download.",
+      );
     }
-  }, [])
+  }, []);
 
   // checksum computes (or reuses) a file's SHA-256 and copies it. Hashing runs
   // as a background job, so a large file is polled rather than awaited inline.
   const checksum = useCallback(async (entry: Entry) => {
-    const id = toast.loading(`Getting SHA-256 of “${entry.name}”…`)
+    const id = toast.loading(`Getting SHA-256 of “${entry.name}”…`);
     try {
-      const res = await api.checksum(entry.path)
-      let sum = res.checksum
+      const res = await api.checksum(entry.path);
+      let sum = res.checksum;
       if (!sum && res.job) {
-        let job = res.job
-        for (let i = 0; i < 900 && (job.status === 'pending' || job.status === 'running'); i++) {
-          await new Promise((r) => setTimeout(r, 800))
-          job = await api.getJob(job.id)
+        let job = res.job;
+        for (
+          let i = 0;
+          i < 900 && (job.status === "pending" || job.status === "running");
+          i++
+        ) {
+          await new Promise((r) => setTimeout(r, 800));
+          job = await api.getJob(job.id);
         }
-        if (job.status !== 'done') throw new Error('checksum job did not finish')
-        sum = (await api.checksum(entry.path)).checksum
+        if (job.status !== "done")
+          throw new Error("checksum job did not finish");
+        sum = (await api.checksum(entry.path)).checksum;
       }
-      if (!sum) throw new Error('no checksum returned')
-      await navigator.clipboard.writeText(sum.hash)
-      const note = sum.source === 'client' ? ' · hashed in-browser' : ''
-      toast.success('SHA-256 copied to clipboard', { id, description: sum.hash + note })
+      if (!sum) throw new Error("no checksum returned");
+      await navigator.clipboard.writeText(sum.hash);
+      const note = sum.source === "client" ? " · hashed in-browser" : "";
+      toast.success("SHA-256 copied to clipboard", {
+        id,
+        description: sum.hash + note,
+      });
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not compute the checksum.', { id })
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Could not compute the checksum.",
+        { id },
+      );
     }
-  }, [])
+  }, []);
 
   // extract unpacks a ZIP into a new folder beside it. It always runs in the
   // background, so it joins the same job panel a background copy uses.
   const extract = useCallback(async (entry: Entry) => {
     try {
-      const { job } = await api.extract(entry.path)
-      const name = entry.name.replace(/\.zip$/i, '')
-      setJobs((cur) => [...cur.filter((j) => j.id !== job.id), newTracked(job, 'extract', name)])
-      toast('Extracting in the background…')
+      const { job } = await api.extract(entry.path);
+      const name = entry.name.replace(/\.zip$/i, "");
+      setJobs((cur) => [
+        ...cur.filter((j) => j.id !== job.id),
+        newTracked(job, "extract", name),
+      ]);
+      toast("Extracting in the background…");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : `Could not extract “${entry.name}”`)
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : `Could not extract “${entry.name}”`,
+      );
     }
-  }, [])
+  }, []);
 
   const selectEntry = useCallback(
     (entry: Entry, intent: ClickIntent) => {
       setSelection((current) => {
-        const next = new Set(current)
-        if (intent === 'toggle') {
-          next.has(entry.path) ? next.delete(entry.path) : next.add(entry.path)
-          return next
+        const next = new Set(current);
+        if (intent === "toggle") {
+          next.has(entry.path) ? next.delete(entry.path) : next.add(entry.path);
+          return next;
         }
-        if (intent === 'range' && anchor) {
-          const order = ordered.map((e) => e.path)
-          const from = order.indexOf(anchor)
-          const to = order.indexOf(entry.path)
+        if (intent === "range" && anchor) {
+          const order = ordered.map((e) => e.path);
+          const from = order.indexOf(anchor);
+          const to = order.indexOf(entry.path);
           if (from !== -1 && to !== -1) {
-            const [lo, hi] = from < to ? [from, to] : [to, from]
-            return new Set(order.slice(lo, hi + 1))
+            const [lo, hi] = from < to ? [from, to] : [to, from];
+            return new Set(order.slice(lo, hi + 1));
           }
         }
-        return new Set([entry.path])
-      })
-      if (intent !== 'range') setAnchor(entry.path)
+        return new Set([entry.path]);
+      });
+      if (intent !== "range") setAnchor(entry.path);
     },
     [anchor, ordered],
-  )
+  );
 
   const moveInto = useCallback(
     async (dirPath: string, dirName: string, paths: string[]) => {
-      if (dirPath === '/members') {
-        toast.error('The members folder is managed automatically.')
-        return
+      if (dirPath === "/members") {
+        toast.error("The members folder is managed automatically.");
+        return;
       }
       const targets = paths.filter(
-        (p) => p !== dirPath && parentOf(p) !== dirPath && !dirPath.startsWith(p + '/'),
-      )
-      if (targets.length === 0) return
+        (p) =>
+          p !== dirPath &&
+          parentOf(p) !== dirPath &&
+          !dirPath.startsWith(p + "/"),
+      );
+      if (targets.length === 0) return;
       // The moved items leave this folder at once; the silent refresh
       // reconciles whatever the server reports.
-      const gone = new Set(targets)
-      setEntries((cur) => cur.filter((e) => !gone.has(e.path)))
-      clearSelection()
+      const gone = new Set(targets);
+      setEntries((cur) => cur.filter((e) => !gone.has(e.path)));
+      clearSelection();
       const pending = toast.loading(
-        targets.length > 1 ? `Moving ${targets.length} items…` : 'Moving…',
-      )
-      let done = 0
+        targets.length > 1 ? `Moving ${targets.length} items…` : "Moving…",
+      );
+      let done = 0;
       for (const p of targets) {
-        const name = p.slice(p.lastIndexOf('/') + 1)
+        const name = p.slice(p.lastIndexOf("/") + 1);
         try {
-          await api.move(p, joinPath(dirPath, name))
-          done++
+          await api.move(p, joinPath(dirPath, name));
+          done++;
         } catch (err) {
-          toast.error(err instanceof ApiError ? err.message : `Could not move “${name}”`)
+          toast.error(
+            err instanceof ApiError ? err.message : `Could not move “${name}”`,
+          );
         }
       }
-      void load(path, { silent: true })
-      void refreshSpace()
+      void load(path, { silent: true });
+      void refreshSpace();
       if (done > 0) {
-        toast.success(done > 1 ? `Moved ${done} items to “${dirName}”` : `Moved to “${dirName}”`, {
-          id: pending,
-        })
+        toast.success(
+          done > 1
+            ? `Moved ${done} items to “${dirName}”`
+            : `Moved to “${dirName}”`,
+          {
+            id: pending,
+          },
+        );
       } else {
-        toast.dismiss(pending)
+        toast.dismiss(pending);
       }
     },
     [path, clearSelection, load, refreshSpace],
-  )
+  );
 
   function cancelRename() {
-    setRenaming(null)
+    setRenaming(null);
   }
 
   function commitRename(entry: Entry, name: string) {
-    setRenaming(null)
-    const trimmed = name.trim()
-    if (!trimmed || trimmed === entry.name) return
+    setRenaming(null);
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === entry.name) return;
     void renameEntry(entry, trimmed).catch((err) => {
-      toast.error(err instanceof ApiError ? err.message : `Could not rename “${entry.name}”`)
-    })
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : `Could not rename “${entry.name}”`,
+      );
+    });
   }
 
   const actions: EntryActions = {
     select: selectEntry,
     open: (entry) => {
       if (entry.is_dir) {
-        setPath(entry.ref ?? entry.path)
-        setQuery('') // opening a folder leaves search and shows that folder
-      } else setPreview(entry) // files always open the preview; the overlay
+        setPath(entry.ref ?? entry.path);
+        setQuery(""); // opening a folder leaves search and shows that folder
+      } else setPreview(entry); // files always open the preview; the overlay
       // owns the download button, so nothing downloads unasked
     },
     goToOriginal: (entry) => {
-      const target = entry.ref
-      if (!target) return // not a reference
-      const dir = parentOf(target)
-      setQuery('')
-      revealRef.current = { dir, path: target }
-      if (dir === path) return // completeReveal picks it up as the menu closes
-      setPath(dir)
+      const target = entry.ref;
+      if (!target) return; // not a reference
+      const dir = parentOf(target);
+      setQuery("");
+      revealRef.current = { dir, path: target };
+      if (dir === path) return; // completeReveal picks it up as the menu closes
+      setPath(dir);
     },
     completeReveal: () => {
-      const reveal = revealRef.current
-      if (!reveal) return
-      if (reveal.dir !== pathRef.current) return
-      if (!entries.some((e) => e.path === reveal.path)) return
-      revealRef.current = null
-      selectBox([reveal.path])
-      focusEntry(reveal.path)
+      const reveal = revealRef.current;
+      if (!reveal) return;
+      if (reveal.dir !== pathRef.current) return;
+      if (!entries.some((e) => e.path === reveal.path)) return;
+      revealRef.current = null;
+      selectBox([reveal.path]);
+      focusEntry(reveal.path);
     },
     download,
     downloadZip: (entry) => void downloadZip([entry]),
     checksum: (entry) => void checksum(entry),
     extract: (entry) => void extract(entry),
-    share: (entry) => setDialog({ kind: 'share', entry }),
-    manageAccess: (entry) => setDialog({ kind: 'access', entry }),
-    info: (entry) => setDialog({ kind: 'info', entry }),
+    share: (entry) => setDialog({ kind: "share", entry }),
+    manageAccess: (entry) => setDialog({ kind: "access", entry }),
+    info: (entry) => setDialog({ kind: "info", entry }),
     childCount: (path) => counts[path],
     canManageAccess: user.is_admin,
-    copy: (entry) => setClipboard({ mode: 'copy', entries: clipboardTargets(entry) }),
-    cut: (entry) => setClipboard({ mode: 'cut', entries: clipboardTargets(entry) }),
+    copy: (entry) =>
+      setClipboard({ mode: "copy", entries: clipboardTargets(entry) }),
+    cut: (entry) =>
+      setClipboard({ mode: "cut", entries: clipboardTargets(entry) }),
     paste: () => void doPaste(),
     pasteRef: () => void doPasteRef(),
     rename: (entry) => setRenaming(entry.path),
     renaming,
     commitRename,
     cancelRename,
-    remove: (entry) => setDialog({ kind: 'delete', entries: [entry] }),
+    remove: (entry) => setDialog({ kind: "delete", entries: [entry] }),
     contextTarget: (entry) => {
-      if (!selection.has(entry.path)) selectEntry(entry, 'replace')
+      if (!selection.has(entry.path)) selectEntry(entry, "replace");
     },
     setColor: (entry, color) => {
-      const targets = clipboardTargets(entry)
-      const previous = targets.map((e) => ({ path: e.path, color: e.color }))
+      const targets = clipboardTargets(entry);
+      const previous = targets.map((e) => ({ path: e.path, color: e.color }));
       const paint = (c: string | undefined) =>
         setEntries((cur) =>
-          cur.map((e) => (targets.some((t) => t.path === e.path) ? { ...e, color: c } : e)),
-        )
-      paint(color ?? undefined)
+          cur.map((e) =>
+            targets.some((t) => t.path === e.path) ? { ...e, color: c } : e,
+          ),
+        );
+      paint(color ?? undefined);
       void Promise.all(targets.map((t) => api.setColor(t.path, color)))
         .then(() => void load(pathRef.current, { silent: true }))
         .catch((err) => {
           setEntries((cur) =>
             cur.map((e) => {
-              const was = previous.find((p) => p.path === e.path)
-              return was ? { ...e, color: was.color } : e
+              const was = previous.find((p) => p.path === e.path);
+              return was ? { ...e, color: was.color } : e;
             }),
-          )
-          toast.error(err instanceof ApiError ? err.message : 'Could not set that colour.')
-        })
+          );
+          toast.error(
+            err instanceof ApiError
+              ? err.message
+              : "Could not set that colour.",
+          );
+        });
     },
     isSelected: (entry) => selection.has(entry.path),
     isCut: (entry) =>
-      clipboard?.mode === 'cut' && clipboard.entries.some((e) => e.path === entry.path),
+      clipboard?.mode === "cut" &&
+      clipboard.entries.some((e) => e.path === entry.path),
     selectBox,
     selectedPaths: () => [...selection],
     isShared: (entry) => sharedPaths.has(entry.path),
-    canPaste: clipboard !== null && path !== '/members',
-    canPasteRef: clipboard !== null && clipboard.mode === 'copy' && clipboard.entries.length === 1 && path !== '/members',
+    canPaste: clipboard !== null && path !== "/members",
+    canPasteRef:
+      clipboard !== null &&
+      clipboard.mode === "copy" &&
+      clipboard.entries.length === 1 &&
+      path !== "/members",
     perms,
     dragPaths: (entry) =>
-      selection.has(entry.path) && selected.length > 0 ? selected.map((e) => e.path) : [entry.path],
+      selection.has(entry.path) && selected.length > 0
+        ? selected.map((e) => e.path)
+        : [entry.path],
     tileSize: GRID_SIZES[gridSize]!,
     moveInto,
     dropTarget,
     setDropTarget,
-  }
+  };
 
   // What copy/cut act on: the whole selection when the target is part of it,
   // otherwise just the one entry the menu was opened on.
   function clipboardTargets(entry: Entry): Entry[] {
-    return selection.has(entry.path) && selected.length > 0 ? selected : [entry]
+    return selection.has(entry.path) && selected.length > 0
+      ? selected
+      : [entry];
   }
 
   // Paste the clipboard into the current folder, then clear it — pasting
   const doPaste = useCallback(async () => {
-    if (!clipboard) return
-    if (path === '/members') {
-      toast.error('The members folder is managed automatically.')
-      return
+    if (!clipboard) return;
+    if (path === "/members") {
+      toast.error("The members folder is managed automatically.");
+      return;
     }
     // Plan every name up front so the optimistic rows match what the server
     // creates. Moving an entry into the folder it already sits in is a no-op.
-    const taken = new Set(entries.map((e) => e.name))
-    const plan: { entry: Entry; name: string }[] = []
+    const taken = new Set(entries.map((e) => e.name));
+    const plan: { entry: Entry; name: string }[] = [];
     for (const entry of clipboard.entries) {
-      if (clipboard.mode === 'cut' && parentOf(entry.path) === path) continue
-      const name = freeName(entry.name, taken)
-      taken.add(name)
-      plan.push({ entry, name })
+      if (clipboard.mode === "cut" && parentOf(entry.path) === path) continue;
+      const name = freeName(entry.name, taken);
+      taken.add(name);
+      plan.push({ entry, name });
     }
     if (plan.length === 0) {
-      setClipboard(null)
-      return
+      setClipboard(null);
+      return;
     }
     // The pasted rows appear at once with the source's metadata, and cut
     // entries leave this folder at once; the silent refresh reconciles
     // sizes, times and failures.
-    const dests = new Map(plan.map(({ entry, name }) => [entry.path, joinPath(path, name)]))
+    const dests = new Map(
+      plan.map(({ entry, name }) => [entry.path, joinPath(path, name)]),
+    );
     setEntries((cur) => {
-      const kept = clipboard.mode === 'cut' ? cur.filter((e) => !dests.has(e.path)) : cur
+      const kept =
+        clipboard.mode === "cut" ? cur.filter((e) => !dests.has(e.path)) : cur;
       return [
         ...kept,
-        ...plan.map(({ entry, name }) => ({ ...entry, path: dests.get(entry.path)!, name })),
-      ]
-    })
-    clearSelection()
+        ...plan.map(({ entry, name }) => ({
+          ...entry,
+          path: dests.get(entry.path)!,
+          name,
+        })),
+      ];
+    });
+    clearSelection();
     const pending = toast.loading(
-      clipboard.mode === 'copy'
+      clipboard.mode === "copy"
         ? `Copying ${plan.length > 1 ? `${plan.length} items` : `“${plan[0]!.name}”`}…`
         : `Moving ${plan.length > 1 ? `${plan.length} items` : `“${plan[0]!.name}”`}…`,
-    )
-    let done = 0
-    let queued = 0
+    );
+    let done = 0;
+    let queued = 0;
     for (const { entry, name } of plan) {
       try {
-        if (clipboard.mode === 'copy') {
-          const res = await api.copy(entry.path, joinPath(path, name))
+        if (clipboard.mode === "copy") {
+          const res = await api.copy(entry.path, joinPath(path, name));
           // A folder or a large file is copied in the background: follow the job
           // instead of counting it done now.
-          if (res && 'job' in res) {
+          if (res && "job" in res) {
             setJobs((cur) => [
               ...cur.filter((j) => j.id !== res.job.id),
-              newTracked(res.job, 'copy', name),
-            ])
-            queued++
+              newTracked(res.job, "copy", name),
+            ]);
+            queued++;
           } else {
-            done++
+            done++;
           }
         } else {
-          await api.move(entry.path, joinPath(path, name))
-          done++
+          await api.move(entry.path, joinPath(path, name));
+          done++;
         }
       } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : `Could not paste “${entry.name}”`)
+        toast.error(
+          err instanceof ApiError
+            ? err.message
+            : `Could not paste “${entry.name}”`,
+        );
       }
     }
-    setClipboard(null)
-    void load(path, { silent: true })
-    void refreshSpace()
+    setClipboard(null);
+    void load(path, { silent: true });
+    void refreshSpace();
     if (done > 0) {
-      const verb = clipboard.mode === 'copy' ? 'Copied' : 'Moved'
-      toast.success(done > 1 ? `${verb} ${done} items` : `${verb} “${plan[0]!.name}”`, {
-        id: pending,
-      })
+      const verb = clipboard.mode === "copy" ? "Copied" : "Moved";
+      toast.success(
+        done > 1 ? `${verb} ${done} items` : `${verb} “${plan[0]!.name}”`,
+        {
+          id: pending,
+        },
+      );
     } else if (queued > 0) {
-      toast(queued > 1 ? `Copying ${queued} items in the background…` : 'Copying in the background…',
+      toast(
+        queued > 1
+          ? `Copying ${queued} items in the background…`
+          : "Copying in the background…",
         { id: pending },
-      )
+      );
     } else {
-      toast.dismiss(pending)
+      toast.dismiss(pending);
     }
-  }, [clipboard, entries, path, clearSelection, load, refreshSpace])
+  }, [clipboard, entries, path, clearSelection, load, refreshSpace]);
 
   const doPasteRef = useCallback(async () => {
-    const src = clipboard?.mode === 'copy' && clipboard.entries.length === 1 ? clipboard.entries[0]! : null
-    if (!src) return
-    if (path === '/members') {
-      toast.error('The members folder is managed automatically.')
-      return
+    const src =
+      clipboard?.mode === "copy" && clipboard.entries.length === 1
+        ? clipboard.entries[0]!
+        : null;
+    if (!src) return;
+    if (path === "/members") {
+      toast.error("The members folder is managed automatically.");
+      return;
     }
-    const name = freeName(src.name, new Set(entries.map((e) => e.name)))
-    const dest = joinPath(path, name)
-    clearSelection()
-    const pending = toast.loading(`Linking “${src.name}”…`)
+    const name = freeName(src.name, new Set(entries.map((e) => e.name)));
+    const dest = joinPath(path, name);
+    clearSelection();
+    const pending = toast.loading(`Linking “${src.name}”…`);
     try {
-      const created = await api.setReference(dest, src.path)
-      setEntries((cur) => [...cur, created])
-      toast.success(`Linked “${src.name}”`, { id: pending })
+      const created = await api.setReference(dest, src.path);
+      setEntries((cur) => [...cur, created]);
+      toast.success(`Linked “${src.name}”`, { id: pending });
     } catch (err) {
-      toast.dismiss(pending)
-      toast.error(err instanceof ApiError ? err.message : `Could not link “${src.name}”`)
-      return
+      toast.dismiss(pending);
+      toast.error(
+        err instanceof ApiError ? err.message : `Could not link “${src.name}”`,
+      );
+      return;
     }
-    setClipboard(null)
-    void load(path, { silent: true })
-    void refreshSpace()
-  }, [clipboard, entries, path, clearSelection, load, refreshSpace])
+    setClipboard(null);
+    void load(path, { silent: true });
+    void refreshSpace();
+  }, [clipboard, entries, path, clearSelection, load, refreshSpace]);
 
   useEffect(() => {
-    if (screen !== 'files') return
+    if (screen !== "files") return;
     function onKey(e: KeyboardEvent) {
-      const t = e.target as HTMLElement | null
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
-      if (dialog || preview) return
-      if (e.key === 'Escape') {
-        if (clipboard) setClipboard(null)
-        else if (selected.length > 0) clearSelection()
-        return
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      )
+        return;
+      if (dialog || preview) return;
+      if (e.key === "Escape") {
+        if (clipboard) setClipboard(null);
+        else if (selected.length > 0) clearSelection();
+        return;
       }
-      if (e.altKey && e.key === 'ArrowUp') {
-        e.preventDefault()
-        setPath(parentOf(path))
-        setQuery('')
-        return
+      if (e.altKey && e.key === "ArrowUp") {
+        e.preventDefault();
+        setPath(parentOf(path));
+        setQuery("");
+        return;
       }
-      if (e.key === 'F2' && selected.length === 1) {
-        const target = selected[0]!
-        const p = entryPerms(target, perms)
+      if (e.key === "F2" && selected.length === 1) {
+        const target = selected[0]!;
+        const p = entryPerms(target, perms);
         if (p.write && p.delete) {
-          e.preventDefault()
-          setRenaming(target.path)
+          e.preventDefault();
+          setRenaming(target.path);
         }
-        return
+        return;
       }
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selected.length > 0) {
+      if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        selected.length > 0
+      ) {
         if (selected.every((en) => entryPerms(en, perms).delete)) {
-          e.preventDefault()
-          setDialog({ kind: 'delete', entries: selected })
+          e.preventDefault();
+          setDialog({ kind: "delete", entries: selected });
         }
-        return
+        return;
       }
       // with no entry focused, default focus on first item
-      const isArrow = e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight'
-      if (isArrow || e.key === 'Tab') {
-        if (e.target instanceof Element && e.target.closest('[data-entry-path]')) return
+      const isArrow =
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight";
+      if (isArrow || e.key === "Tab") {
+        if (
+          e.target instanceof Element &&
+          e.target.closest("[data-entry-path]")
+        )
+          return;
         // keep noramal tab key usage
-        if (e.key === 'Tab' && e.target instanceof Element && e.target.closest('button, a, [role="button"]')) return
-        if (ordered.length === 0) return
-        e.preventDefault()
-        focusEntry(ordered[0]!.path)
-        return
+        if (
+          e.key === "Tab" &&
+          e.target instanceof Element &&
+          e.target.closest('button, a, [role="button"]')
+        )
+          return;
+        if (ordered.length === 0) return;
+        e.preventDefault();
+        focusEntry(ordered[0]!.path);
+        return;
       }
       // ⌘⇧V pastes a reference
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'v' && clipboard) {
-        if (clipboard.mode === 'copy' && clipboard.entries.length === 1) {
-          e.preventDefault()
-          void doPasteRef()
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.shiftKey &&
+        !e.altKey &&
+        e.key.toLowerCase() === "v" &&
+        clipboard
+      ) {
+        if (clipboard.mode === "copy" && clipboard.entries.length === 1) {
+          e.preventDefault();
+          void doPasteRef();
         }
-        return
+        return;
       }
-      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return
-      const key = e.key.toLowerCase()
-      if (key === 'a') {
-        e.preventDefault()
-        selectBox(ordered.map((en) => en.path))
-      } else if (key === 'c' && selected.length > 0) {
-        e.preventDefault()
-        setClipboard({ mode: 'copy', entries: selected })
-      } else if (key === 'x' && selected.length > 0) {
-        if (!selected.every((e) => entryPerms(e, perms).delete)) return
-        e.preventDefault()
-        setClipboard({ mode: 'cut', entries: selected })
-      } else if (key === 'v' && clipboard) {
-        e.preventDefault()
-        void doPaste()
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      const key = e.key.toLowerCase();
+      if (key === "a") {
+        e.preventDefault();
+        selectBox(ordered.map((en) => en.path));
+      } else if (key === "c" && selected.length > 0) {
+        e.preventDefault();
+        setClipboard({ mode: "copy", entries: selected });
+      } else if (key === "x" && selected.length > 0) {
+        if (!selected.every((e) => entryPerms(e, perms).delete)) return;
+        e.preventDefault();
+        setClipboard({ mode: "cut", entries: selected });
+      } else if (key === "v" && clipboard) {
+        e.preventDefault();
+        void doPaste();
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [screen, selected, clipboard, doPaste, doPasteRef, dialog, preview, perms, ordered, selectBox, path, clearSelection, focusEntry])
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [
+    screen,
+    selected,
+    clipboard,
+    doPaste,
+    doPasteRef,
+    dialog,
+    preview,
+    perms,
+    ordered,
+    selectBox,
+    path,
+    clearSelection,
+    focusEntry,
+  ]);
 
   // Follow background copies: while any job is unfinished, poll each until it
   // settles, then refresh the listing on success or report the failure. The
   // effect keys on whether work is outstanding, not on the jobs themselves, so
   // progress updates do not restart the interval.
-  const hasActiveJobs = jobs.some((j) => j.status === 'pending' || j.status === 'running')
-  const jobsRef = useRef(jobs)
-  jobsRef.current = jobs
+  const hasActiveJobs = jobs.some(
+    (j) => j.status === "pending" || j.status === "running",
+  );
+  const jobsRef = useRef(jobs);
+  jobsRef.current = jobs;
   useEffect(() => {
-    if (!hasActiveJobs) return
+    if (!hasActiveJobs) return;
     const timer = window.setInterval(() => {
-      for (const tracked of jobsRef.current.filter((j) => j.status === 'pending' || j.status === 'running')) {
+      for (const tracked of jobsRef.current.filter(
+        (j) => j.status === "pending" || j.status === "running",
+      )) {
         api
           .getJob(tracked.id)
           .then((fresh) => {
             setJobs((cur) =>
               cur.map((j) => {
-                if (j.id !== tracked.id) return j
+                if (j.id !== tracked.id) return j;
                 // Transfer rate from the change since the last sample. Only
                 // update the rate when bytes actually advanced, so a stalled or
                 // just-paused job keeps its last figure rather than dropping to 0.
-                const now = Date.now()
-                const dt = (now - j.sampledAt) / 1000
-                const advanced = fresh.bytes_done - j.bytesDone
-                const speed = dt > 0 && advanced > 0 ? advanced / dt : j.speed
+                const now = Date.now();
+                const dt = (now - j.sampledAt) / 1000;
+                const advanced = fresh.bytes_done - j.bytesDone;
+                const speed = dt > 0 && advanced > 0 ? advanced / dt : j.speed;
                 return {
                   ...j,
                   status: fresh.status,
@@ -1217,132 +1478,177 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
                   bytesTotal: fresh.bytes_total,
                   sampledAt: now,
                   speed,
-                }
+                };
               }),
-            )
-            if (fresh.status === 'done') {
+            );
+            if (fresh.status === "done") {
               const done =
-                tracked.kind === 'extract' ? 'Extracted' : tracked.kind === 'fetch' ? 'Downloaded' : 'Copied'
-              toast.success(`${done} “${tracked.name}”`)
-              void load(pathRef.current, { silent: true })
-              void refreshSpace()
-            } else if (fresh.status === 'failed') {
+                tracked.kind === "extract"
+                  ? "Extracted"
+                  : tracked.kind === "fetch"
+                    ? "Downloaded"
+                    : "Copied";
+              toast.success(`${done} “${tracked.name}”`);
+              void load(pathRef.current, { silent: true });
+              void refreshSpace();
+            } else if (fresh.status === "failed") {
               const verb =
-                tracked.kind === 'extract' ? 'extract' : tracked.kind === 'fetch' ? 'download' : 'copy'
-              toast.error(`Could not ${verb} “${tracked.name}”${fresh.error ? `: ${fresh.error}` : ''}`)
+                tracked.kind === "extract"
+                  ? "extract"
+                  : tracked.kind === "fetch"
+                    ? "download"
+                    : "copy";
+              toast.error(
+                `Could not ${verb} “${tracked.name}”${fresh.error ? `: ${fresh.error}` : ""}`,
+              );
             }
           })
           .catch(() => {
             // A transient poll failure is ignored; the next tick retries.
-          })
+          });
       }
-    }, 1000)
-    return () => window.clearInterval(timer)
-  }, [hasActiveJobs, load, refreshSpace])
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [hasActiveJobs, load, refreshSpace]);
 
   async function createFolder(name: string) {
-    const folderPath = joinPath(path, name)
+    const folderPath = joinPath(path, name);
     // The folder appears at once; the silent refresh fills in the details.
     // A failure propagates to the dialog, which shows it inline — the
     // refresh in the finally rolls the optimistic row back out.
     setEntries((cur) => [
       ...cur,
-      { path: folderPath, name, size: 0, mod_time: new Date().toISOString(), is_dir: true },
-    ])
+      {
+        path: folderPath,
+        name,
+        size: 0,
+        mod_time: new Date().toISOString(),
+        is_dir: true,
+      },
+    ]);
     try {
-      await api.mkdir(folderPath)
+      await api.mkdir(folderPath);
     } finally {
-      void load(path, { silent: true })
+      void load(path, { silent: true });
     }
-    toast.success(`Folder “${name}” created`)
+    toast.success(`Folder “${name}” created`);
   }
 
   // fetchFromUrl asks the server to download a URL into the current folder. It
   // runs in the background, joining the same job panel as a copy or extraction.
   async function fetchFromUrl(url: string) {
-    const { job } = await api.fetchUrl(url, path)
+    const { job } = await api.fetchUrl(url, path);
     // A readable name for the panel: the URL's last path segment, or its host.
-    let name = url
+    let name = url;
     try {
-      const u = new URL(url)
-      name = u.pathname.split('/').filter(Boolean).pop() || u.host
+      const u = new URL(url);
+      name = u.pathname.split("/").filter(Boolean).pop() || u.host;
     } catch {
       // keep the raw URL as the label
     }
-    setJobs((cur) => [...cur.filter((j) => j.id !== job.id), newTracked(job, 'fetch', name)])
-    toast('Downloading in the background…')
+    setJobs((cur) => [
+      ...cur.filter((j) => j.id !== job.id),
+      newTracked(job, "fetch", name),
+    ]);
+    toast("Downloading in the background…");
   }
 
   // patchJob applies a job action and folds the returned state back in. Pausing
   // zeroes the shown rate; resuming restarts the rate sampling window.
-  async function patchJob(id: number, act: (id: number) => Promise<Job>, extra: Partial<TrackedJob> = {}) {
+  async function patchJob(
+    id: number,
+    act: (id: number) => Promise<Job>,
+    extra: Partial<TrackedJob> = {},
+  ) {
     try {
-      const fresh = await act(id)
+      const fresh = await act(id);
       setJobs((cur) =>
-        cur.map((j) => (j.id === id ? { ...j, status: fresh.status, ...extra } : j)),
-      )
+        cur.map((j) =>
+          j.id === id ? { ...j, status: fresh.status, ...extra } : j,
+        ),
+      );
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not update the download.')
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Could not update the download.",
+      );
     }
   }
-  const jobPause = (id: number) => void patchJob(id, api.pauseJob, { speed: 0 })
-  const jobResume = (id: number) => void patchJob(id, api.resumeJob, { sampledAt: Date.now(), speed: 0 })
-  const jobCancel = (id: number) => void patchJob(id, api.cancelJob)
+  const jobPause = (id: number) =>
+    void patchJob(id, api.pauseJob, { speed: 0 });
+  const jobResume = (id: number) =>
+    void patchJob(id, api.resumeJob, { sampledAt: Date.now(), speed: 0 });
+  const jobCancel = (id: number) => void patchJob(id, api.cancelJob);
 
   async function renameEntry(entry: Entry, name: string) {
-    const to = joinPath(parentOf(entry.path), name)
+    const to = joinPath(parentOf(entry.path), name);
     // The new name shows at once; the silent refresh reconciles (and fixes
     // child paths when a folder moved). A failure reloads the truth.
-    setEntries((cur) => cur.map((e) => (e.path === entry.path ? { ...e, path: to, name } : e)))
-    clearSelection()
+    setEntries((cur) =>
+      cur.map((e) => (e.path === entry.path ? { ...e, path: to, name } : e)),
+    );
+    clearSelection();
     try {
-      await api.move(entry.path, to)
+      await api.move(entry.path, to);
     } finally {
-      void load(path, { silent: true })
+      void load(path, { silent: true });
     }
-    toast.success(`Renamed to “${name}”`)
+    toast.success(`Renamed to “${name}”`);
   }
 
   async function deleteEntries(list: Entry[]) {
     // Deleted rows vanish at once instead of flashing through a spinner; the
     // silent refresh brings back anything the server refused to delete.
-    const gone = new Set(list.map((e) => e.path))
-    setEntries((cur) => cur.filter((e) => !gone.has(e.path)))
-    clearSelection()
-    let done = 0
+    const gone = new Set(list.map((e) => e.path));
+    setEntries((cur) => cur.filter((e) => !gone.has(e.path)));
+    clearSelection();
+    let done = 0;
     for (const entry of list) {
       try {
-        await api.remove(entry.path, entry.is_dir)
-        done++
+        await api.remove(entry.path, entry.is_dir);
+        done++;
       } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : `Could not delete “${entry.name}”`)
+        toast.error(
+          err instanceof ApiError
+            ? err.message
+            : `Could not delete “${entry.name}”`,
+        );
       }
     }
-    void load(path, { silent: true })
-    void refreshSpace()
+    void load(path, { silent: true });
+    void refreshSpace();
     if (done > 0) {
-      toast.success(done > 1 ? `${done} items moved to trash` : `“${list[0]!.name}” moved to trash`)
+      toast.success(
+        done > 1
+          ? `${done} items moved to trash`
+          : `“${list[0]!.name}” moved to trash`,
+      );
     }
   }
 
   async function signOut() {
-    await api.logout().catch(() => undefined)
-    onSignedOut()
+    await api.logout().catch(() => undefined);
+    onSignedOut();
   }
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
       current.key === key
-        ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' }
-        : { key, dir: 'asc' },
-    )
+        ? { key, dir: current.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "asc" },
+    );
   }
 
-  const onlyOne = selected.length === 1 ? selected[0]! : null
-  const one = onlyOne ? entryPerms(onlyOne, perms) : null
-  const everySelected = selected.every((en) => entryPerms(en, perms).delete)
-  const canCreateHere = perms.write && path !== '/members'
-  const canPasteRef = clipboard !== null && clipboard.mode === 'copy' && clipboard.entries.length === 1 && path !== '/members'
+  const onlyOne = selected.length === 1 ? selected[0]! : null;
+  const one = onlyOne ? entryPerms(onlyOne, perms) : null;
+  const everySelected = selected.every((en) => entryPerms(en, perms).delete);
+  const canCreateHere = perms.write && path !== "/members";
+  const canPasteRef =
+    clipboard !== null &&
+    clipboard.mode === "copy" &&
+    clipboard.entries.length === 1 &&
+    path !== "/members";
 
   // empty-area create menu depending on whether the caller can write here.
   const browseArea = (
@@ -1355,25 +1661,35 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
         path={path}
         home={homePath}
         onNavigate={(p) => {
-          setPath(p)
-          setQuery('')
+          setPath(p);
+          setQuery("");
         }}
         actions={actions}
       />
       {loading && entries.length === 0 ? (
         <div className="grid h-full place-items-center">
-          <CircleNotchIcon className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+          <CircleNotchIcon
+            className="size-6 animate-spin text-muted-foreground"
+            aria-label="Loading"
+          />
         </div>
       ) : inSearch && searchResults === null ? (
         <div className="grid h-full place-items-center">
-          <CircleNotchIcon className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+          <CircleNotchIcon
+            className="size-6 animate-spin text-muted-foreground"
+            aria-label="Loading"
+          />
         </div>
       ) : ordered.length === 0 ? (
         <Empty
-          title={inSearch ? 'No matches' : 'Nothing here'}
-          detail={inSearch ? 'No file matches your search.' : 'Drop files or folders anywhere on this page to upload them.'}
+          title={inSearch ? "No matches" : "Nothing here"}
+          detail={
+            inSearch
+              ? "No file matches your search."
+              : "Drop files or folders anywhere on this page to upload them."
+          }
         />
-      ) : view === 'grid' ? (
+      ) : view === "grid" ? (
         <GridView
           groups={groups}
           actions={actions}
@@ -1397,7 +1713,7 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
       )}
       {box.rect && <BoxOverlay rect={box.rect} fading={box.fading} />}
     </div>
-  )
+  );
 
   return (
     <div className="flex h-dvh bg-background">
@@ -1408,287 +1724,316 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
         create={createActions}
         canCreate={canCreateHere}
         onHome={() => {
-          setScreen('files')
-          setPath(homePath)
-          setQuery('')
+          setScreen("files");
+          setPath(homePath);
+          setQuery("");
         }}
-        onTrash={() => setScreen('trash')}
-        onShared={() => setScreen('shared')}
-        onSharedWithMe={() => setScreen('shared-with-me')}
-        onMembers={() => setScreen('members')}
-        onActivity={() => setScreen('activity')}
-        onSettings={() => setScreen('settings')}
+        onTrash={() => setScreen("trash")}
+        onShared={() => setScreen("shared")}
+        onSharedWithMe={() => setScreen("shared-with-me")}
+        onMembers={() => setScreen("members")}
+        onActivity={() => setScreen("activity")}
+        onSettings={() => setScreen("settings")}
         onSignOut={signOut}
         version={version}
       />
 
-      {screen === 'trash' ? (
+      {screen === "trash" ? (
         <TrashScreen onChanged={refreshSpace} />
-      ) : screen === 'shared' ? (
+      ) : screen === "shared" ? (
         <SharesScreen
           me={user}
           mode="links"
           onOpen={(p) => {
-            setScreen('files')
-            setPath(p)
-            setQuery('')
+            setScreen("files");
+            setPath(p);
+            setQuery("");
           }}
         />
-      ) : screen === 'shared-with-me' ? (
+      ) : screen === "shared-with-me" ? (
         <SharesScreen
           me={user}
           mode="incoming"
           onOpen={(p) => {
-            setScreen('files')
-            setPath(p)
-            setQuery('')
+            setScreen("files");
+            setPath(p);
+            setQuery("");
           }}
         />
-      ) : screen === 'members' ? (
+      ) : screen === "members" ? (
         <MembersScreen me={user} />
-      ) : screen === 'settings' ? (
-        <SettingsScreen me={user} onSignedOut={onSignedOut} />
-      ) : screen === 'activity' ? (
+      ) : screen === "settings" ? (
+        <SettingsScreen
+          me={user}
+          minPasswordLength={minPasswordLength}
+          onSignedOut={onSignedOut}
+        />
+      ) : screen === "activity" ? (
         <ActivityScreen />
       ) : (
-      <div
-        className="relative flex min-w-0 flex-1 flex-col"
-        onDragOver={(e) => {
-          if (e.dataTransfer.types.includes(MOVE_MIME)) return
-          if (path === '/members') return
-          e.preventDefault()
-          setDragging(true)
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          // A move dropped on empty space (no folder under it) is simply
-          // cancelled — it is never an upload.
-          if (e.dataTransfer.types.includes(MOVE_MIME)) {
-            setDragging(false)
-            return
-          }
-          e.preventDefault()
-          setDragging(false)
-          if (path === '/members') return
-          // Capture entries synchronously: a DataTransfer is only valid during
-          // the drop. Folders come through the entries API (no native prompt);
-          // a browser that exposes none falls back to the flat file list.
-          const entries = dropEntries(e.dataTransfer)
-          if (entries.length) void dropUpload(entries)
-          else if (e.dataTransfer.files.length) void upload(e.dataTransfer.files)
-        }}
-      >
-        {selected.length > 0 ? (
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-accent/40 px-4">
-            <Button variant="ghost" size="icon" aria-label="Clear selection" onClick={clearSelection}>
-              <XIcon />
-            </Button>
-            <span className="text-sm font-medium">{selected.length} selected</span>
-            <div className="ml-auto flex items-center gap-1">
-              {perms.read && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    // A lone file downloads directly; anything else — several
-                    // items, or a folder — is streamed as a zip.
-                    if (onlyOne && !onlyOne.is_dir) download(onlyOne)
-                    else void downloadZip(selected)
-                  }}
-                >
-                  <DownloadIcon />
-                  Download
-                </Button>
-              )}
-              {onlyOne && one && one.write && one.delete && (
-                <Button variant="ghost" size="sm" onClick={() => actions.rename(onlyOne)}>
-                  <PencilSimpleIcon />
-                  Rename
-                </Button>
-              )}
-              {perms.read && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setClipboard({ mode: 'copy', entries: selected })
-                    clearSelection()
-                  }}
-                >
-                  <CopyIcon />
-                  Copy
-                </Button>
-              )}
-              {everySelected && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setClipboard({ mode: 'cut', entries: selected })
-                    clearSelection()
-                  }}
-                >
-                  <ScissorsIcon />
-                  Move
-                </Button>
-              )}
-              {everySelected && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setDialog({ kind: 'delete', entries: selected })}
-                >
-                  <TrashIcon />
-                  Delete
-                </Button>
-              )}
-            </div>
-          </header>
-        ) : (
-          <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-            <div className="relative w-full max-w-md">
-              {searching ? (
-                <CircleNotchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-              ) : (
-                <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              )}
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.currentTarget.value)}
-                placeholder={path === '/' ? 'Search all files…' : 'Search from this folder…'}
-                className="pl-9 pr-9"
-              />
-              {query && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={() => setQuery('')}
-                  className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-muted-foreground hover:text-foreground"
-                >
-                  <XIcon className="size-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="ml-auto flex items-center gap-2">
-              {clipboard && canCreateHere && (
-                <button
-                  type="button"
-                  onClick={() => void doPaste()}
-                  title={`Paste ${clipboard.entries.length} item${clipboard.entries.length > 1 ? 's' : ''} here`}
-                  className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-sm text-primary hover:bg-primary/15"
-                >
-                  <ClipboardTextIcon className="size-4" />
-                  Paste ({clipboard.entries.length})
-                </button>
-              )}
-              {clipboard && canCreateHere && canPasteRef && (
-                <button
-                  type="button"
-                  onClick={() => void doPasteRef()}
-                  title="Paste a link to the copied item — a pointer back to the original, not a copy of it"
-                  className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-sm text-primary hover:bg-primary/15"
-                >
-                  <LinkIcon className="size-4" />
-                  Paste link
-                </button>
-              )}
+        <div
+          className="relative flex min-w-0 flex-1 flex-col"
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes(MOVE_MIME)) return;
+            if (path === "/members") return;
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            // A move dropped on empty space (no folder under it) is simply
+            // cancelled — it is never an upload.
+            if (e.dataTransfer.types.includes(MOVE_MIME)) {
+              setDragging(false);
+              return;
+            }
+            e.preventDefault();
+            setDragging(false);
+            if (path === "/members") return;
+            // Capture entries synchronously: a DataTransfer is only valid during
+            // the drop. Folders come through the entries API (no native prompt);
+            // a browser that exposes none falls back to the flat file list.
+            const entries = dropEntries(e.dataTransfer);
+            if (entries.length) void dropUpload(entries);
+            else if (e.dataTransfer.files.length)
+              void upload(e.dataTransfer.files);
+          }}
+        >
+          {selected.length > 0 ? (
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-accent/40 px-4">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="size-8"
-                aria-label="Refresh listing"
-                title="Refresh"
-                disabled={refreshing}
-                onClick={() => {
-                  setRefreshing(true)
-                  void Promise.all([load(path, { silent: true }), refreshSpace()]).finally(() =>
-                    setRefreshing(false),
-                  )
-                }}
+                aria-label="Clear selection"
+                onClick={clearSelection}
               >
-                <ArrowsClockwiseIcon className={refreshing ? 'animate-spin' : undefined} />
+                <XIcon />
               </Button>
-              <ViewToggle view={view} onChange={setView} />
-              <DisplayOptions
-                sort={sort}
-                onSortKey={(key) => setSort((c) => ({ key, dir: c.dir }))}
-                onSortDir={(dir) => setSort((c) => ({ key: c.key, dir }))}
-                group={group}
-                onGroup={setGroup}
-                gridSize={gridSize}
-                onGridSize={setGridSize}
-                showSize={view === 'grid'}
-              />
-            </div>
-          </header>
-        )}
+              <span className="text-sm font-medium">
+                {selected.length} selected
+              </span>
+              <div className="ml-auto flex items-center gap-1">
+                {perms.read && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // A lone file downloads directly; anything else — several
+                      // items, or a folder — is streamed as a zip.
+                      if (onlyOne && !onlyOne.is_dir) download(onlyOne);
+                      else void downloadZip(selected);
+                    }}
+                  >
+                    <DownloadIcon />
+                    Download
+                  </Button>
+                )}
+                {onlyOne && one && one.write && one.delete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => actions.rename(onlyOne)}
+                  >
+                    <PencilSimpleIcon />
+                    Rename
+                  </Button>
+                )}
+                {perms.read && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setClipboard({ mode: "copy", entries: selected });
+                      clearSelection();
+                    }}
+                  >
+                    <CopyIcon />
+                    Copy
+                  </Button>
+                )}
+                {everySelected && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setClipboard({ mode: "cut", entries: selected });
+                      clearSelection();
+                    }}
+                  >
+                    <ScissorsIcon />
+                    Move
+                  </Button>
+                )}
+                {everySelected && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() =>
+                      setDialog({ kind: "delete", entries: selected })
+                    }
+                  >
+                    <TrashIcon />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </header>
+          ) : (
+            <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+              <div className="relative w-full max-w-md">
+                {searching ? (
+                  <CircleNotchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                ) : (
+                  <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                )}
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.currentTarget.value)}
+                  placeholder={
+                    path === "/"
+                      ? "Search all files…"
+                      : "Search from this folder…"
+                  }
+                  className="pl-9 pr-9"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setQuery("")}
+                    className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-muted-foreground hover:text-foreground"
+                  >
+                    <XIcon className="size-4" />
+                  </button>
+                )}
+              </div>
 
-        {error && (
-          <p role="alert" className="border-b bg-destructive/10 px-4 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-
-        {inSearch && searchTruncated && ordered.length > 0 && (
-          <p className="border-b bg-amber-500/10 px-4 py-1.5 text-xs text-muted-foreground">
-            Showing the first {ordered.length} matches — refine your search to narrow it down.
-          </p>
-        )}
-
-        {canCreateHere ? (
-          <ContextMenu>
-            <ContextMenuTrigger asChild>{browseArea}</ContextMenuTrigger>
-            <ContextMenuContent className="w-52">
-              <CreateContextItems actions={createActions} />
-              {clipboard && (
-                <>
-                  <ContextMenuSeparator />
-                  <ContextMenuItem onSelect={() => void doPaste()}>
-                    <ClipboardTextIcon />
+              <div className="ml-auto flex items-center gap-2">
+                {clipboard && canCreateHere && (
+                  <button
+                    type="button"
+                    onClick={() => void doPaste()}
+                    title={`Paste ${clipboard.entries.length} item${clipboard.entries.length > 1 ? "s" : ""} here`}
+                    className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-sm text-primary hover:bg-primary/15"
+                  >
+                    <ClipboardTextIcon className="size-4" />
                     Paste ({clipboard.entries.length})
-                    <ContextMenuShortcut>⌘V</ContextMenuShortcut>
-                  </ContextMenuItem>
-                  {canPasteRef && (
-                    <ContextMenuItem onSelect={() => void doPasteRef()}>
-                      <LinkIcon />
-                      Paste link
-                      <ContextMenuShortcut>⌘⇧V</ContextMenuShortcut>
+                  </button>
+                )}
+                {clipboard && canCreateHere && canPasteRef && (
+                  <button
+                    type="button"
+                    onClick={() => void doPasteRef()}
+                    title="Paste a link to the copied item — a pointer back to the original, not a copy of it"
+                    className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-sm text-primary hover:bg-primary/15"
+                  >
+                    <LinkIcon className="size-4" />
+                    Paste link
+                  </button>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-8"
+                  aria-label="Refresh listing"
+                  title="Refresh"
+                  disabled={refreshing}
+                  onClick={() => {
+                    setRefreshing(true);
+                    void Promise.all([
+                      load(path, { silent: true }),
+                      refreshSpace(),
+                    ]).finally(() => setRefreshing(false));
+                  }}
+                >
+                  <ArrowsClockwiseIcon
+                    className={refreshing ? "animate-spin" : undefined}
+                  />
+                </Button>
+                <ViewToggle view={view} onChange={setView} />
+                <DisplayOptions
+                  sort={sort}
+                  onSortKey={(key) => setSort((c) => ({ key, dir: c.dir }))}
+                  onSortDir={(dir) => setSort((c) => ({ key: c.key, dir }))}
+                  group={group}
+                  onGroup={setGroup}
+                  gridSize={gridSize}
+                  onGridSize={setGridSize}
+                  showSize={view === "grid"}
+                />
+              </div>
+            </header>
+          )}
+
+          {error && (
+            <p
+              role="alert"
+              className="border-b bg-destructive/10 px-4 py-2 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
+
+          {inSearch && searchTruncated && ordered.length > 0 && (
+            <p className="border-b bg-amber-500/10 px-4 py-1.5 text-xs text-muted-foreground">
+              Showing the first {ordered.length} matches — refine your search to
+              narrow it down.
+            </p>
+          )}
+
+          {canCreateHere ? (
+            <ContextMenu>
+              <ContextMenuTrigger asChild>{browseArea}</ContextMenuTrigger>
+              <ContextMenuContent className="w-52">
+                <CreateContextItems actions={createActions} />
+                {clipboard && (
+                  <>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => void doPaste()}>
+                      <ClipboardTextIcon />
+                      Paste ({clipboard.entries.length})
+                      <ContextMenuShortcut>⌘V</ContextMenuShortcut>
                     </ContextMenuItem>
-                  )}
-                </>
-              )}
-            </ContextMenuContent>
-          </ContextMenu>
-        ) : (
-          browseArea
-        )}
+                    {canPasteRef && (
+                      <ContextMenuItem onSelect={() => void doPasteRef()}>
+                        <LinkIcon />
+                        Paste link
+                        <ContextMenuShortcut>⌘⇧V</ContextMenuShortcut>
+                      </ContextMenuItem>
+                    )}
+                  </>
+                )}
+              </ContextMenuContent>
+            </ContextMenu>
+          ) : (
+            browseArea
+          )}
 
-        {dragging && path !== '/members' && (
-          <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-primary/10 backdrop-blur-sm">
-            <div className="rounded-xl border-2 border-dashed border-primary bg-card px-8 py-6 text-lg font-medium text-primary">
-              Drop to upload
+          {dragging && path !== "/members" && (
+            <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-primary/10 backdrop-blur-sm">
+              <div className="rounded-xl border-2 border-dashed border-primary bg-card px-8 py-6 text-lg font-medium text-primary">
+                Drop to upload
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="fixed bottom-4 right-4 z-20 flex flex-col items-end gap-3">
-          <Transfers
-            transfers={transfers}
-            onClear={() => setTransfers([])}
-            onCancel={cancelTransfers}
-            onCancelTransfer={cancelTransfer}
-          />
-          <JobsPanel
-            jobs={jobs}
-            onClear={() => setJobs([])}
-            onPause={jobPause}
-            onResume={jobResume}
-            onCancel={jobCancel}
-          />
+          <div className="fixed bottom-4 right-4 z-20 flex flex-col items-end gap-3">
+            <Transfers
+              transfers={transfers}
+              onClear={() => setTransfers([])}
+              onCancel={cancelTransfers}
+              onCancelTransfer={cancelTransfer}
+            />
+            <JobsPanel
+              jobs={jobs}
+              onClear={() => setJobs([])}
+              onPause={jobPause}
+              onResume={jobResume}
+              onCancel={jobCancel}
+            />
+          </div>
         </div>
-      </div>
       )}
 
       <input
@@ -1697,8 +2042,8 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
         multiple
         hidden
         onChange={(e) => {
-          if (e.currentTarget.files?.length) void upload(e.currentTarget.files)
-          e.currentTarget.value = ''
+          if (e.currentTarget.files?.length) void upload(e.currentTarget.files);
+          e.currentTarget.value = "";
         }}
       />
 
@@ -1708,17 +2053,24 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
         hidden
         // webkitdirectory turns the picker into a folder picker; it is not in the
         // React types, so it is spread in as an attribute.
-        {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+        {...({ webkitdirectory: "", directory: "" } as Record<string, string>)}
         onChange={(e) => {
-          if (e.currentTarget.files?.length) void importFolder(e.currentTarget.files)
-          e.currentTarget.value = ''
+          if (e.currentTarget.files?.length)
+            void importFolder(e.currentTarget.files);
+          e.currentTarget.value = "";
         }}
       />
 
-      {dialog?.kind === 'new-folder' && (
-        <NameDialog title="New folder" label="Folder name" submitLabel="Create" onSubmit={createFolder} onClose={() => setDialog(null)} />
+      {dialog?.kind === "new-folder" && (
+        <NameDialog
+          title="New folder"
+          label="Folder name"
+          submitLabel="Create"
+          onSubmit={createFolder}
+          onClose={() => setDialog(null)}
+        />
       )}
-      {dialog?.kind === 'fetch-url' && (
+      {dialog?.kind === "fetch-url" && (
         <NameDialog
           title="Download from URL"
           label="File URL"
@@ -1728,19 +2080,27 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
           onClose={() => setDialog(null)}
         />
       )}
-      {dialog?.kind === 'delete' && (
-        <DeleteDialog entries={dialog.entries} onConfirm={() => deleteEntries(dialog.entries)} onClose={() => setDialog(null)} />
+      {dialog?.kind === "delete" && (
+        <DeleteDialog
+          entries={dialog.entries}
+          onConfirm={() => deleteEntries(dialog.entries)}
+          onClose={() => setDialog(null)}
+        />
       )}
 
-      {dialog?.kind === 'share' && (
-        <ShareDialog entry={dialog.entry} onCreated={refreshShares} onClose={() => setDialog(null)} />
+      {dialog?.kind === "share" && (
+        <ShareDialog
+          entry={dialog.entry}
+          onCreated={refreshShares}
+          onClose={() => setDialog(null)}
+        />
       )}
 
-      {dialog?.kind === 'access' && (
+      {dialog?.kind === "access" && (
         <AccessDialog entry={dialog.entry} onClose={() => setDialog(null)} />
       )}
 
-      {dialog?.kind === 'info' && (
+      {dialog?.kind === "info" && (
         <FileInfoDialog entry={dialog.entry} onClose={() => setDialog(null)} />
       )}
 
@@ -1756,100 +2116,124 @@ export function Browser({ user, onSignedOut }: { user: User; onSignedOut: () => 
         />
       )}
     </div>
-  )
+  );
 }
 
 function comparatorFor(sort: { key: SortKey; dir: SortDir }) {
-  const sign = sort.dir === 'asc' ? 1 : -1
+  const sign = sort.dir === "asc" ? 1 : -1;
   return (a: Entry, b: Entry) => {
-    let r = 0
-    if (sort.key === 'name') r = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
-    else if (sort.key === 'size') r = a.size - b.size
-    else r = new Date(a.mod_time).getTime() - new Date(b.mod_time).getTime()
-    return r * sign
-  }
+    let r = 0;
+    if (sort.key === "name")
+      r = a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    else if (sort.key === "size") r = a.size - b.size;
+    else r = new Date(a.mod_time).getTime() - new Date(b.mod_time).getTime();
+    return r * sign;
+  };
 }
 
-function sortEntries(list: Entry[], sort: { key: SortKey; dir: SortDir }): Entry[] {
-  const cmp = comparatorFor(sort)
-  const folders = list.filter((e) => e.is_dir).sort(cmp)
-  const files = list.filter((e) => !e.is_dir).sort(cmp)
-  return [...folders, ...files]
+function sortEntries(
+  list: Entry[],
+  sort: { key: SortKey; dir: SortDir },
+): Entry[] {
+  const cmp = comparatorFor(sort);
+  const folders = list.filter((e) => e.is_dir).sort(cmp);
+  const files = list.filter((e) => !e.is_dir).sort(cmp);
+  return [...folders, ...files];
 }
 
 function dateBucket(iso: string): string {
-  const t = new Date(iso).getTime()
-  if (Number.isNaN(t)) return 'Older'
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const day = 86_400_000
-  if (t >= startOfToday) return 'Today'
-  if (t >= startOfToday - day) return 'Yesterday'
-  if (t >= startOfToday - 7 * day) return 'Earlier this week'
-  if (t >= startOfToday - 30 * day) return 'Earlier this month'
-  return 'Older'
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "Older";
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const day = 86_400_000;
+  if (t >= startOfToday) return "Today";
+  if (t >= startOfToday - day) return "Yesterday";
+  if (t >= startOfToday - 7 * day) return "Earlier this week";
+  if (t >= startOfToday - 30 * day) return "Earlier this month";
+  return "Older";
 }
 
-function buildGroups(list: Entry[], group: GroupBy, sort: { key: SortKey; dir: SortDir }): Group[] {
-  if (group === 'none') {
-    return [{ key: 'all', label: '', entries: sortEntries(list, sort) }]
+function buildGroups(
+  list: Entry[],
+  group: GroupBy,
+  sort: { key: SortKey; dir: SortDir },
+): Group[] {
+  if (group === "none") {
+    return [{ key: "all", label: "", entries: sortEntries(list, sort) }];
   }
-  const cmp = comparatorFor(sort)
-  const buckets = new Map<string, Entry[]>()
+  const cmp = comparatorFor(sort);
+  const buckets = new Map<string, Entry[]>();
   for (const entry of list) {
-    const label = group === 'type' ? categoryLabel(entry) : dateBucket(entry.mod_time)
-    const arr = buckets.get(label)
-    if (arr) arr.push(entry)
-    else buckets.set(label, [entry])
+    const label =
+      group === "type" ? categoryLabel(entry) : dateBucket(entry.mod_time);
+    const arr = buckets.get(label);
+    if (arr) arr.push(entry);
+    else buckets.set(label, [entry]);
   }
-  const order = group === 'type' ? TYPE_ORDER : DATE_ORDER
-  const result: Group[] = []
+  const order = group === "type" ? TYPE_ORDER : DATE_ORDER;
+  const result: Group[] = [];
   for (const label of order) {
-    const arr = buckets.get(label)
+    const arr = buckets.get(label);
     if (arr) {
-      result.push({ key: label, label, entries: arr.sort(cmp) })
-      buckets.delete(label)
+      result.push({ key: label, label, entries: arr.sort(cmp) });
+      buckets.delete(label);
     }
   }
   // Anything not in the known order (shouldn't happen) trails, still sorted.
-  for (const [label, arr] of buckets) result.push({ key: label, label, entries: arr.sort(cmp) })
-  return result
+  for (const [label, arr] of buckets)
+    result.push({ key: label, label, entries: arr.sort(cmp) });
+  return result;
 }
 
 function flattenGroups(groups: Group[]): ListItem[] {
-  const rows: ListItem[] = []
+  const rows: ListItem[] = [];
   for (const g of groups) {
-    if (g.label) rows.push({ type: 'header', id: `h:${g.key}`, label: g.label, count: g.entries.length })
-    for (const entry of g.entries) rows.push({ type: 'entry', entry })
+    if (g.label)
+      rows.push({
+        type: "header",
+        id: `h:${g.key}`,
+        label: g.label,
+        count: g.entries.length,
+      });
+    for (const entry of g.entries) rows.push({ type: "entry", entry });
   }
-  return rows
+  return rows;
 }
 
 /** freeName returns name, or name with a "(copy)" suffix, whichever the folder
  *  does not already hold — so a paste never silently overwrites. */
 function freeName(name: string, taken: Set<string>): string {
-  if (!taken.has(name)) return name
-  const dot = name.lastIndexOf('.')
-  const base = dot > 0 ? name.slice(0, dot) : name
-  const ext = dot > 0 ? name.slice(dot) : ''
+  if (!taken.has(name)) return name;
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : "";
   for (let i = 1; ; i++) {
-    const candidate = i === 1 ? `${base} (copy)${ext}` : `${base} (copy ${i})${ext}`
-    if (!taken.has(candidate)) return candidate
+    const candidate =
+      i === 1 ? `${base} (copy)${ext}` : `${base} (copy ${i})${ext}`;
+    if (!taken.has(candidate)) return candidate;
   }
 }
 
 /** intentOf reads the modifier keys the same way everywhere. */
 function intentOf(e: MouseEvent): ClickIntent {
-  if (e.metaKey || e.ctrlKey) return 'toggle'
-  if (e.shiftKey) return 'range'
-  return 'replace'
+  if (e.metaKey || e.ctrlKey) return "toggle";
+  if (e.shiftKey) return "range";
+  return "replace";
 }
 
 /** clearUnlessEntry clears the selection for clicks on empty browse-area space. */
 function clearUnlessEntry(e: MouseEvent, onClearSelection: () => void) {
-  const el = e.target instanceof Element ? e.target : null
-  if (el?.closest(INTERACTIVE_SELECTOR)) return
-  onClearSelection()
+  const el = e.target instanceof Element ? e.target : null;
+  if (el?.closest(INTERACTIVE_SELECTOR)) return;
+  onClearSelection();
 }
 
 function BoxOverlay({ rect, fading }: { rect: BoxRect; fading: boolean }) {
@@ -1865,7 +2249,7 @@ function BoxOverlay({ rect, fading }: { rect: BoxRect; fading: boolean }) {
         transition: `opacity ${FADE_MS}ms`,
       }}
     />
-  )
+  );
 }
 
 /**
@@ -1876,62 +2260,73 @@ function BoxOverlay({ rect, fading }: { rect: BoxRect; fading: boolean }) {
  * `variant` picks the multi-item preview's shape: a grid tile, or the list
  * row's horizontal bar.
  */
-function moveDragProps(entry: Entry, actions: EntryActions, variant: 'tile' | 'row' = 'tile') {
-  const p = entryPerms(entry, actions.perms)
-  const isTarget = entry.is_dir && actions.dropTarget === entry.path
-  const renaming = actions.renaming === entry.path
+function moveDragProps(
+  entry: Entry,
+  actions: EntryActions,
+  variant: "tile" | "row" = "tile",
+) {
+  const p = entryPerms(entry, actions.perms);
+  const isTarget = entry.is_dir && actions.dropTarget === entry.path;
+  const renaming = actions.renaming === entry.path;
   return {
     isTarget,
     draggable: p.delete && !renaming,
     onDragStart: (e: DragEvent) => {
-      if (!p.delete) return
-      const paths = actions.dragPaths(entry)
-      e.dataTransfer.setData(MOVE_MIME, JSON.stringify(paths))
-      e.dataTransfer.effectAllowed = 'move'
-      installDragGhost(e.dataTransfer, paths.length, actions.tileSize, variant)
+      if (!p.delete) return;
+      const paths = actions.dragPaths(entry);
+      e.dataTransfer.setData(MOVE_MIME, JSON.stringify(paths));
+      e.dataTransfer.effectAllowed = "move";
+      installDragGhost(e.dataTransfer, paths.length, actions.tileSize, variant);
     },
     onDragEnd: () => {
-      clearDragGhost()
-      actions.setDropTarget(null)
+      clearDragGhost();
+      actions.setDropTarget(null);
     },
     onDragOver: (e: DragEvent) => {
-      if (!entry.is_dir || !e.dataTransfer.types.includes(MOVE_MIME)) return
-      if (entry.path === '/members') return
-      e.preventDefault()
-      e.stopPropagation()
-      e.dataTransfer.dropEffect = 'move'
-      if (actions.dropTarget !== entry.path) actions.setDropTarget(entry.path)
+      if (!entry.is_dir || !e.dataTransfer.types.includes(MOVE_MIME)) return;
+      if (entry.path === "/members") return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "move";
+      if (actions.dropTarget !== entry.path) actions.setDropTarget(entry.path);
     },
     onDragLeave: () => {
-      if (entry.is_dir && actions.dropTarget === entry.path) actions.setDropTarget(null)
+      if (entry.is_dir && actions.dropTarget === entry.path)
+        actions.setDropTarget(null);
     },
     onDrop: (e: DragEvent) => {
-      if (!entry.is_dir) return
-      const raw = e.dataTransfer.getData(MOVE_MIME)
-      if (!raw) return
-      e.preventDefault()
-      e.stopPropagation()
-      actions.setDropTarget(null)
+      if (!entry.is_dir) return;
+      const raw = e.dataTransfer.getData(MOVE_MIME);
+      if (!raw) return;
+      e.preventDefault();
+      e.stopPropagation();
+      actions.setDropTarget(null);
       try {
-        actions.moveInto(entry.path, entry.name, JSON.parse(raw) as string[])
+        actions.moveInto(entry.path, entry.name, JSON.parse(raw) as string[]);
       } catch {
         // A malformed payload is not something to act on.
       }
     },
-  }
+  };
 }
 
-function ViewToggle({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: View;
+  onChange: (v: View) => void;
+}) {
   const options: { value: View; label: string; icon: ReactNode }[] = [
-    { value: 'list', label: 'List', icon: <ListIcon /> },
-    { value: 'grid', label: 'Icons', icon: <SquaresFourIcon /> },
-  ]
+    { value: "list", label: "List", icon: <ListIcon /> },
+    { value: "grid", label: "Icons", icon: <SquaresFourIcon /> },
+  ];
   return (
     <div className="flex items-center gap-1 rounded-md border p-0.5">
       {options.map((o) => (
         <Button
           key={o.value}
-          variant={view === o.value ? 'secondary' : 'ghost'}
+          variant={view === o.value ? "secondary" : "ghost"}
           size="icon"
           className="size-7"
           aria-label={`${o.label} view`}
@@ -1942,7 +2337,7 @@ function ViewToggle({ view, onChange }: { view: View; onChange: (v: View) => voi
         </Button>
       ))}
     </div>
-  )
+  );
 }
 
 function DisplayOptions({
@@ -1955,14 +2350,14 @@ function DisplayOptions({
   onGridSize,
   showSize,
 }: {
-  sort: { key: SortKey; dir: SortDir }
-  onSortKey: (key: SortKey) => void
-  onSortDir: (dir: SortDir) => void
-  group: GroupBy
-  onGroup: (g: GroupBy) => void
-  gridSize: number
-  onGridSize: (n: number) => void
-  showSize: boolean
+  sort: { key: SortKey; dir: SortDir };
+  onSortKey: (key: SortKey) => void;
+  onSortDir: (dir: SortDir) => void;
+  group: GroupBy;
+  onGroup: (g: GroupBy) => void;
+  gridSize: number;
+  onGridSize: (n: number) => void;
+  showSize: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -1974,28 +2369,44 @@ function DisplayOptions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={sort.key} onValueChange={(v) => onSortKey(v as SortKey)}>
+        <DropdownMenuRadioGroup
+          value={sort.key}
+          onValueChange={(v) => onSortKey(v as SortKey)}
+        >
           <DropdownMenuRadioItem value="name">Name</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="size">Size</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="modified">Last modified</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="modified">
+            Last modified
+          </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={sort.dir} onValueChange={(v) => onSortDir(v as SortDir)}>
+        <DropdownMenuRadioGroup
+          value={sort.dir}
+          onValueChange={(v) => onSortDir(v as SortDir)}
+        >
           <DropdownMenuRadioItem value="asc">Ascending</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="desc">Descending</DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Group by</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={group} onValueChange={(v) => onGroup(v as GroupBy)}>
+        <DropdownMenuRadioGroup
+          value={group}
+          onValueChange={(v) => onGroup(v as GroupBy)}
+        >
           <DropdownMenuRadioItem value="none">None</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="type">Type</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="date">Date modified</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="date">
+            Date modified
+          </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         {showSize && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Icon size</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={String(gridSize)} onValueChange={(v) => onGridSize(Number(v))}>
+            <DropdownMenuRadioGroup
+              value={String(gridSize)}
+              onValueChange={(v) => onGridSize(Number(v))}
+            >
               {GRID_SIZES.map((s, i) => (
                 <DropdownMenuRadioItem key={s.label} value={String(i)}>
                   {s.label}
@@ -2006,7 +2417,7 @@ function DisplayOptions({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
 function Breadcrumb({
@@ -2015,53 +2426,58 @@ function Breadcrumb({
   onNavigate,
   actions,
 }: {
-  path: string
-  home: string
-  onNavigate: (p: string) => void
-  actions: EntryActions
+  path: string;
+  home: string;
+  onNavigate: (p: string) => void;
+  actions: EntryActions;
 }) {
-  const inHome = path === home || (home !== '/' && path.startsWith(home + '/'))
-  const relative = inHome ? path.slice(home.length) : path
-  const segments = relative === '' || relative === '/' ? [] : relative.replace(/^\//, '').split('/')
+  const inHome = path === home || (home !== "/" && path.startsWith(home + "/"));
+  const relative = inHome ? path.slice(home.length) : path;
+  const segments =
+    relative === "" || relative === "/"
+      ? []
+      : relative.replace(/^\//, "").split("/");
   const targetFor = (index: number) =>
-    inHome ? home + '/' + segments.slice(0, index + 1).join('/') : '/' + segments.slice(0, index + 1).join('/')
-  const upTarget = parentOf(path)
-  const showUp = path !== home && !(upTarget === '/' && home !== '/')
+    inHome
+      ? home + "/" + segments.slice(0, index + 1).join("/")
+      : "/" + segments.slice(0, index + 1).join("/");
+  const upTarget = parentOf(path);
+  const showUp = path !== home && !(upTarget === "/" && home !== "/");
   const dropFor = (target: string, name: string) => ({
     onDragOver: (e: DragEvent) => {
-      if (!e.dataTransfer.types.includes(MOVE_MIME)) return
-      if (target === '/members') return
-      e.preventDefault()
-      e.stopPropagation()
-      e.dataTransfer.dropEffect = 'move'
-      if (actions.dropTarget !== target) actions.setDropTarget(target)
+      if (!e.dataTransfer.types.includes(MOVE_MIME)) return;
+      if (target === "/members") return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "move";
+      if (actions.dropTarget !== target) actions.setDropTarget(target);
     },
     onDragLeave: () => {
-      if (actions.dropTarget === target) actions.setDropTarget(null)
+      if (actions.dropTarget === target) actions.setDropTarget(null);
     },
     onDrop: (e: DragEvent) => {
-      const raw = e.dataTransfer.getData(MOVE_MIME)
-      if (!raw) return
-      e.preventDefault()
-      e.stopPropagation()
-      actions.setDropTarget(null)
+      const raw = e.dataTransfer.getData(MOVE_MIME);
+      if (!raw) return;
+      e.preventDefault();
+      e.stopPropagation();
+      actions.setDropTarget(null);
       try {
-        actions.moveInto(target, name, JSON.parse(raw) as string[])
+        actions.moveInto(target, name, JSON.parse(raw) as string[]);
       } catch {
         // A malformed payload is not something to act on.
       }
     },
-  })
+  });
   const highlight = (target: string) =>
-    actions.dropTarget === target ? 'bg-primary/15 ring-2 ring-primary' : ''
+    actions.dropTarget === target ? "bg-primary/15 ring-2 ring-primary" : "";
   return (
     <nav
       aria-label="Location"
       className="inline-flex items-center gap-0.5 ml-3 mr-auto my-1.5"
       onContextMenu={(e) => {
         // exempt from the browse area's context menu
-        e.preventDefault()
-        e.stopPropagation()
+        e.preventDefault();
+        e.stopPropagation();
       }}
     >
       <Button
@@ -2069,16 +2485,20 @@ function Breadcrumb({
         size="sm"
         className={`gap-1.5 ${highlight(home)}`}
         onClick={() => onNavigate(home)}
-        {...(path === home ? {} : dropFor(home, 'Home'))}
+        {...(path === home ? {} : dropFor(home, "Home"))}
       >
         <HouseIcon className="size-4" aria-hidden />
         Home
       </Button>
       {segments.map((segment, index) => {
-        const target = targetFor(index)
+        const target = targetFor(index);
         return (
           <div key={target} className="flex items-center gap-0.5">
-            <CaretRightIcon className="size-4 text-muted-foreground" aria-hidden data-control />
+            <CaretRightIcon
+              className="size-4 text-muted-foreground"
+              aria-hidden
+              data-control
+            />
             <Button
               variant="ghost"
               size="sm"
@@ -2089,7 +2509,7 @@ function Breadcrumb({
               {displayName({ name: segment, path: target })}
             </Button>
           </div>
-        )
+        );
       })}
       {showUp && (
         <Button
@@ -2103,19 +2523,27 @@ function Breadcrumb({
         </Button>
       )}
     </nav>
-  )
+  );
 }
 
-function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryActions; children: ReactNode }) {
-  const p = entryPerms(entry, actions.perms)
-  const share = p.share
-  const manage = actions.canManageAccess
-  const copy = p.read
-  const cut = p.delete
-  const paste = actions.canPaste && p.write
-  const rename = p.write && p.delete
-  const remove = p.delete
-  const following = useRef(false)
+function EntryMenu({
+  entry,
+  actions,
+  children,
+}: {
+  entry: Entry;
+  actions: EntryActions;
+  children: ReactNode;
+}) {
+  const p = entryPerms(entry, actions.perms);
+  const share = p.share;
+  const manage = actions.canManageAccess;
+  const copy = p.read;
+  const cut = p.delete;
+  const paste = actions.canPaste && p.write;
+  const rename = p.write && p.delete;
+  const remove = p.delete;
+  const following = useRef(false);
   return (
     <ContextMenu>
       <ContextMenuTrigger
@@ -2123,8 +2551,8 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
         onContextMenu={(e) => {
           // Keep the event from also reaching the empty-area menu that wraps the
           // whole list, so a right-click on a row opens only the entry's menu.
-          e.stopPropagation()
-          actions.contextTarget(entry)
+          e.stopPropagation();
+          actions.contextTarget(entry);
         }}
       >
         {children}
@@ -2132,10 +2560,10 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
       <ContextMenuContent
         className="w-48"
         onCloseAutoFocus={(e) => {
-          if (!following.current) return
-          following.current = false
-          e.preventDefault()
-          actions.completeReveal()
+          if (!following.current) return;
+          following.current = false;
+          e.preventDefault();
+          actions.completeReveal();
         }}
       >
         {entry.is_dir ? (
@@ -2157,7 +2585,7 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
               <FingerprintIcon />
               Copy SHA-256
             </ContextMenuItem>
-            {entry.name.toLowerCase().endsWith('.zip') && p.write && (
+            {entry.name.toLowerCase().endsWith(".zip") && p.write && (
               <ContextMenuItem onSelect={() => actions.extract(entry)}>
                 <FileZipIcon />
                 Extract here
@@ -2168,8 +2596,8 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
         {entry.ref && (
           <ContextMenuItem
             onSelect={() => {
-              following.current = true
-              actions.goToOriginal(entry)
+              following.current = true;
+              actions.goToOriginal(entry);
             }}
           >
             <LinkIcon />
@@ -2219,11 +2647,12 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
             <ContextMenuShortcut>⌘V</ContextMenuShortcut>
           </ContextMenuItem>
         )}
-        {paste && actions.canPasteRef && (            <ContextMenuItem onSelect={() => actions.pasteRef()}>
-              <LinkIcon />
-              Paste link
-              <ContextMenuShortcut>⌘⇧V</ContextMenuShortcut>
-            </ContextMenuItem>
+        {paste && actions.canPasteRef && (
+          <ContextMenuItem onSelect={() => actions.pasteRef()}>
+            <LinkIcon />
+            Paste link
+            <ContextMenuShortcut>⌘⇧V</ContextMenuShortcut>
+          </ContextMenuItem>
         )}
 
         <ContextMenuSeparator />
@@ -2275,7 +2704,7 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => actions.info(entry)}>
           <InfoIcon />
-          {entry.is_dir ? 'Folder info' : 'File info'}
+          {entry.is_dir ? "Folder info" : "File info"}
         </ContextMenuItem>
         {rename && (
           <ContextMenuItem onSelect={() => actions.rename(entry)}>
@@ -2285,7 +2714,10 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
           </ContextMenuItem>
         )}
         {remove && (
-          <ContextMenuItem variant="destructive" onSelect={() => actions.remove(entry)}>
+          <ContextMenuItem
+            variant="destructive"
+            onSelect={() => actions.remove(entry)}
+          >
             <TrashIcon />
             Move to Trash
             <ContextMenuShortcut>Del</ContextMenuShortcut>
@@ -2293,108 +2725,149 @@ function EntryMenu({ entry, actions, children }: { entry: Entry; actions: EntryA
         )}
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }
 
 type ListProps = {
-  rows: ListItem[]
-  sort: { key: SortKey; dir: SortDir }
-  onSort: (key: SortKey) => void
-  actions: EntryActions
+  rows: ListItem[];
+  sort: { key: SortKey; dir: SortDir };
+  onSort: (key: SortKey) => void;
+  actions: EntryActions;
   // showLocation reveals each entry's folder under its name — used in search
   // results, which span folders.
-  showLocation: boolean
-  focusPath: string | null
-  focusSeq: number
-  focusEntry: (path: string | null) => void
-}
+  showLocation: boolean;
+  focusPath: string | null;
+  focusSeq: number;
+  focusEntry: (path: string | null) => void;
+};
 
 // One grid template shared by the column header and every row so they line up.
-const listGrid = 'grid grid-cols-[1.5rem_1fr_6rem_9rem_5rem] items-center gap-3'
+const listGrid =
+  "grid grid-cols-[1.5rem_1fr_6rem_9rem_5rem] items-center gap-3";
 
 const CUT_CLASSES =
-  'opacity-60 outline-dashed outline-1 -outline-offset-1 outline-muted-foreground/70'
+  "opacity-60 outline-dashed outline-1 -outline-offset-1 outline-muted-foreground/70";
 
 /** locationLabel names the folder an entry lives in, for search results. */
 function locationLabel(path: string): string {
-  const parent = parentOf(path)
-  return parent === '/' ? 'Home' : parent.slice(1)
+  const parent = parentOf(path);
+  return parent === "/" ? "Home" : parent.slice(1);
 }
 
-function ListView({ rows, sort, onSort, actions, showLocation, focusPath, focusSeq, focusEntry }: ListProps) {
-  const viewport = useRef<HTMLDivElement>(null)
+function ListView({
+  rows,
+  sort,
+  onSort,
+  actions,
+  showLocation,
+  focusPath,
+  focusSeq,
+  focusEntry,
+}: ListProps) {
+  const viewport = useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => viewport.current,
-    estimateSize: (i) => (rows[i]?.type === 'header' ? headerHeight : rowHeight),
+    estimateSize: (i) =>
+      rows[i]?.type === "header" ? headerHeight : rowHeight,
     getItemKey: (i) => {
-      const row = rows[i]
-      return row ? (row.type === 'header' ? row.id : row.entry.path) : i
+      const row = rows[i];
+      return row ? (row.type === "header" ? row.id : row.entry.path) : i;
     },
     overscan: 8,
-  })
+  });
 
   useEffect(() => {
-    if (!focusPath) return
-    if (actions.renaming) return
-    const idx = rows.findIndex((r) => r.type === 'entry' && r.entry.path === focusPath)
-    if (idx < 0) return
-    virtualizer.scrollToIndex(idx)
-    let id = 0
+    if (!focusPath) return;
+    if (actions.renaming) return;
+    const idx = rows.findIndex(
+      (r) => r.type === "entry" && r.entry.path === focusPath,
+    );
+    if (idx < 0) return;
+    virtualizer.scrollToIndex(idx);
+    let id = 0;
     const attempt = (triesLeft: number) => {
       const el = viewport.current?.querySelector<HTMLElement>(
         `[data-entry-path="${CSS.escape(focusPath)}"]`,
-      )
+      );
       if (el) {
-        el.focus({ preventScroll: true })
-        return
+        el.focus({ preventScroll: true });
+        return;
       }
-      if (triesLeft > 0) id = requestAnimationFrame(() => attempt(triesLeft - 1))
-    }
-    id = requestAnimationFrame(() => attempt(10))
-    return () => cancelAnimationFrame(id)
-  }, [focusPath, focusSeq, rows, virtualizer, actions.renaming])
+      if (triesLeft > 0)
+        id = requestAnimationFrame(() => attempt(triesLeft - 1));
+    };
+    id = requestAnimationFrame(() => attempt(10));
+    return () => cancelAnimationFrame(id);
+  }, [focusPath, focusSeq, rows, virtualizer, actions.renaming]);
 
   const move = (step: -1 | 1) => {
-    if (!focusPath) return
-    const entryRows = rows.filter((r): r is Extract<ListItem, { type: 'entry' }> => r.type === 'entry')
-    const i = entryRows.findIndex((r) => r.entry.path === focusPath)
-    const next = entryRows[i + step]
-    if (!next) return
-    focusEntry(next.entry.path)
-  }
+    if (!focusPath) return;
+    const entryRows = rows.filter(
+      (r): r is Extract<ListItem, { type: "entry" }> => r.type === "entry",
+    );
+    const i = entryRows.findIndex((r) => r.entry.path === focusPath);
+    const next = entryRows[i + step];
+    if (!next) return;
+    focusEntry(next.entry.path);
+  };
 
   return (
     <div
       ref={viewport}
       className="min-h-0 flex-1 overflow-auto"
       onKeyDown={(e) => {
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
-        if (e.altKey || e.metaKey || e.ctrlKey) return
-        e.preventDefault()
-        move(e.key === 'ArrowDown' ? 1 : -1)
+        if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+        if (e.altKey || e.metaKey || e.ctrlKey) return;
+        e.preventDefault();
+        move(e.key === "ArrowDown" ? 1 : -1);
       }}
     >
-      <div className={`${listGrid} sticky top-0 z-10 border-b bg-background px-4 py-2 text-xs font-medium text-muted-foreground`}>
+      <div
+        className={`${listGrid} sticky top-0 z-10 border-b bg-background px-4 py-2 text-xs font-medium text-muted-foreground`}
+      >
         <span />
-        <SortHeader label="Name" active={sort.key === 'name'} dir={sort.dir} onClick={() => onSort('name')} />
-        <SortHeader label="Size" active={sort.key === 'size'} dir={sort.dir} onClick={() => onSort('size')} align="right" />
-        <SortHeader label="Last modified" active={sort.key === 'modified'} dir={sort.dir} onClick={() => onSort('modified')} align="right" />
+        <SortHeader
+          label="Name"
+          active={sort.key === "name"}
+          dir={sort.dir}
+          onClick={() => onSort("name")}
+        />
+        <SortHeader
+          label="Size"
+          active={sort.key === "size"}
+          dir={sort.dir}
+          onClick={() => onSort("size")}
+          align="right"
+        />
+        <SortHeader
+          label="Last modified"
+          active={sort.key === "modified"}
+          dir={sort.dir}
+          onClick={() => onSort("modified")}
+          align="right"
+        />
         <span />
       </div>
 
-      <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+      <div
+        className="relative w-full"
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
         {virtualizer.getVirtualItems().map((item) => {
-          const row = rows[item.index]
-          if (!row) return null
+          const row = rows[item.index];
+          if (!row) return null;
           return (
             <div
               key={item.key}
               className="absolute inset-x-0 top-0"
-              style={{ height: `${item.size}px`, transform: `translateY(${item.start}px)` }}
+              style={{
+                height: `${item.size}px`,
+                transform: `translateY(${item.start}px)`,
+              }}
             >
-              {row.type === 'header' ? (
+              {row.type === "header" ? (
                 <div className="flex h-full items-center gap-2 bg-muted/40 px-4 text-xs font-medium text-muted-foreground">
                   {row.label}
                   <span className="text-muted-foreground/60">{row.count}</span>
@@ -2409,11 +2882,11 @@ function ListView({ rows, sort, onSort, actions, showLocation, focusPath, focusS
                 />
               )}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 function SortHeader({
@@ -2423,24 +2896,29 @@ function SortHeader({
   align,
   onClick,
 }: {
-  label: string
-  active: boolean
-  dir: SortDir
-  align?: 'right'
-  onClick: () => void
+  label: string;
+  active: boolean;
+  dir: SortDir;
+  align?: "right";
+  onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex items-center gap-1 outline-none hover:text-foreground focus-visible:text-foreground ${
-        align === 'right' ? 'justify-end' : ''
-      } ${active ? 'text-foreground' : ''}`}
+        align === "right" ? "justify-end" : ""
+      } ${active ? "text-foreground" : ""}`}
     >
       {label}
-      {active && (dir === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+      {active &&
+        (dir === "asc" ? (
+          <ArrowUpIcon className="size-3" />
+        ) : (
+          <ArrowDownIcon className="size-3" />
+        ))}
     </button>
-  )
+  );
 }
 
 /** RenameField swaps an entry's name for a live input: Enter applies, Escape
@@ -2452,11 +2930,11 @@ function RenameField({
   actions,
   className,
 }: {
-  entry: Entry
-  actions: EntryActions
-  className: string
+  entry: Entry;
+  actions: EntryActions;
+  className: string;
 }) {
-  const [value, setValue] = useState(entry.name)
+  const [value, setValue] = useState(entry.name);
   return (
     <input
       autoFocus
@@ -2469,23 +2947,23 @@ function RenameField({
         // The rows refocus themselves whenever focus bubbles up to them
         // (focusSeq), which would yank focus from this input, blur it, and
         // cancel the rename the moment it starts. Keep focus here.
-        e.stopPropagation()
-        e.currentTarget.select()
+        e.stopPropagation();
+        e.currentTarget.select();
       }}
       onChange={(e) => setValue(e.target.value)}
       onBlur={() => actions.cancelRename()}
       onKeyDown={(e) => {
-        e.stopPropagation()
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          actions.commitRename(entry, value)
-        } else if (e.key === 'Escape') {
-          e.preventDefault()
-          actions.cancelRename()
+        e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          actions.commitRename(entry, value);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          actions.cancelRename();
         }
       }}
     />
-  )
+  );
 }
 
 function ListRow({
@@ -2495,20 +2973,20 @@ function ListRow({
   focused,
   onFocus,
 }: {
-  entry: Entry
-  actions: EntryActions
-  showLocation: boolean
-  focused: boolean
-  onFocus: () => void
+  entry: Entry;
+  actions: EntryActions;
+  showLocation: boolean;
+  focused: boolean;
+  onFocus: () => void;
 }) {
-  const { icon: Icon, color } = entryKind(entry)
-  const tint = panelClasses(entry.color)
-  const swatch = colorHex(entry.color)
-  const selected = actions.isSelected(entry)
-  const shared = actions.isShared(entry)
-  const linked = entry.ref != null
-  const cut = actions.isCut(entry)
-  const { isTarget, ...drag } = moveDragProps(entry, actions, 'row')
+  const { icon: Icon, color } = entryKind(entry);
+  const tint = panelClasses(entry.color);
+  const swatch = colorHex(entry.color);
+  const selected = actions.isSelected(entry);
+  const shared = actions.isShared(entry);
+  const linked = entry.ref != null;
+  const cut = actions.isCut(entry);
+  const { isTarget, ...drag } = moveDragProps(entry, actions, "row");
   return (
     <EntryMenu entry={entry} actions={actions}>
       <div
@@ -2517,23 +2995,23 @@ function ListRow({
         aria-selected={selected}
         data-entry-path={entry.path}
         className={`group ${listGrid} h-12 cursor-default border-b border-border/60 px-4 select-none focus:ring-2 focus:ring-inset focus:ring-primary ${
-          cut ? CUT_CLASSES : 'outline-none'
+          cut ? CUT_CLASSES : "outline-none"
         } ${
           isTarget
-            ? 'bg-primary/15 ring-2 ring-inset ring-primary'
+            ? "bg-primary/15 ring-2 ring-inset ring-primary"
             : selected
-              ? 'bg-primary/10'
-              : 'hover:bg-accent/60'
+              ? "bg-primary/10"
+              : "hover:bg-accent/60"
         }`}
         {...drag}
         onFocus={onFocus}
         onClick={(e) => actions.select(entry, intentOf(e))}
         onDoubleClick={() => actions.open(entry)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') actions.open(entry)
-          else if (e.key === ' ') {
-            e.preventDefault()
-            actions.select(entry, 'toggle')
+          if (e.key === "Enter") actions.open(entry);
+          else if (e.key === " ") {
+            e.preventDefault();
+            actions.select(entry, "toggle");
           }
         }}
       >
@@ -2542,10 +3020,10 @@ function ListRow({
             entry={entry}
             size={64}
             className={`grid size-6 place-items-center overflow-hidden rounded ${
-              tint ?? 'bg-muted'
+              tint ?? "bg-muted"
             }`}
           >
-            <Icon className={tint ? 'size-5' : `size-5 ${color}`} />
+            <Icon className={tint ? "size-5" : `size-5 ${color}`} />
           </Thumbnail>
         ) : (
           <Icon className={`size-5 ${color}`} />
@@ -2569,29 +3047,40 @@ function ListRow({
               />
             ) : (
               <span className="truncate text-sm" title={displayName(entry)}>
-                  {displayName(entry)}
+                {displayName(entry)}
               </span>
             )}
             {shared && (
-              <ShareIcon className="size-3.5 shrink-0 text-muted-foreground" aria-label="Shared" />
+              <ShareIcon
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-label="Shared"
+              />
             )}
             {linked && (
-              <LinkIcon className="size-3.5 shrink-0 text-muted-foreground" aria-label="Reference" />
+              <LinkIcon
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-label="Reference"
+              />
             )}
           </span>
           {showLocation && (
-            <span className="truncate text-xs text-muted-foreground" title={locationLabel(entry.path)}>
+            <span
+              className="truncate text-xs text-muted-foreground"
+              title={locationLabel(entry.path)}
+            >
               {locationLabel(entry.path)}
             </span>
           )}
         </span>
 
         <span className="text-right text-xs tabular-nums text-muted-foreground">
-          {entry.is_dir ? childLabel(actions.childCount(entry.path)) || '—' : formatSize(entry.size)}
+          {entry.is_dir
+            ? childLabel(actions.childCount(entry.path)) || "—"
+            : formatSize(entry.size)}
         </span>
 
         <span className="text-right text-xs text-muted-foreground">
-          {formatRelativeTime(entry.mod_time) || '—'}
+          {formatRelativeTime(entry.mod_time) || "—"}
         </span>
 
         <div className="flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -2602,8 +3091,8 @@ function ListRow({
               className="size-8"
               aria-label={`Download ${entry.name}`}
               onClick={(e) => {
-                e.stopPropagation()
-                actions.download(entry)
+                e.stopPropagation();
+                actions.download(entry);
               }}
             >
               <DownloadSimpleIcon />
@@ -2616,8 +3105,8 @@ function ListRow({
               className="size-8 text-muted-foreground hover:text-destructive"
               aria-label={`Trash ${entry.name}`}
               onClick={(e) => {
-                e.stopPropagation()
-                actions.remove(entry)
+                e.stopPropagation();
+                actions.remove(entry);
               }}
             >
               <TrashIcon />
@@ -2626,7 +3115,7 @@ function ListRow({
         </div>
       </div>
     </EntryMenu>
-  )
+  );
 }
 
 /**
@@ -2642,63 +3131,79 @@ function GridView({
   focusSeq,
   focusEntry,
 }: {
-  groups: Group[]
-  actions: EntryActions
-  size: GridSize
-  showLocation: boolean
-  focusPath: string | null
-  focusSeq: number
-  focusEntry: (path: string | null) => void
+  groups: Group[];
+  actions: EntryActions;
+  size: GridSize;
+  showLocation: boolean;
+  focusPath: string | null;
+  focusSeq: number;
+  focusEntry: (path: string | null) => void;
 }) {
-  const root = useRef<HTMLDivElement>(null)
+  const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!focusPath) return
+    if (!focusPath) return;
     // As in the list: an inline rename holds the focus; refocusing the row
     // would blur the input and cancel the edit.
-    if (actions.renaming) return
+    if (actions.renaming) return;
     const el = root.current?.querySelector<HTMLElement>(
       `[data-entry-path="${CSS.escape(focusPath)}"]`,
-    )
-    el?.focus({ preventScroll: true })
-    el?.scrollIntoView({ block: 'nearest' })
-  }, [focusPath, focusSeq, actions.renaming])
+    );
+    el?.focus({ preventScroll: true });
+    el?.scrollIntoView({ block: "nearest" });
+  }, [focusPath, focusSeq, actions.renaming]);
 
-  const move = (key: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') => {
-    const container = root.current
-    if (!container) return
-    const tiles = [...container.querySelectorAll<HTMLElement>('[data-entry-path]')]
+  const move = (key: "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight") => {
+    const container = root.current;
+    if (!container) return;
+    const tiles = [
+      ...container.querySelectorAll<HTMLElement>("[data-entry-path]"),
+    ];
     const current = focusPath
-      ? tiles.find((t) => t.getAttribute('data-entry-path') === focusPath)
-      : tiles[0]
-    if (!current) return
-    const from = current.getBoundingClientRect()
-    const fx = from.left + from.width / 2
-    const fy = from.top + from.height / 2
-    let best: { el: HTMLElement; score: number } | null = null
+      ? tiles.find((t) => t.getAttribute("data-entry-path") === focusPath)
+      : tiles[0];
+    if (!current) return;
+    const from = current.getBoundingClientRect();
+    const fx = from.left + from.width / 2;
+    const fy = from.top + from.height / 2;
+    let best: { el: HTMLElement; score: number } | null = null;
     for (const el of tiles) {
-      if (el === current) continue
-      const r = el.getBoundingClientRect()
-      const dx = r.left + r.width / 2 - fx
-      const dy = r.top + r.height / 2 - fy
-      const along = key === 'ArrowUp' ? -dy : key === 'ArrowDown' ? dy : key === 'ArrowLeft' ? -dx : dx
-      if (along <= 1) continue
-      const across = key === 'ArrowUp' || key === 'ArrowDown' ? Math.abs(dx) : Math.abs(dy)
-      const score = along + across * 3
-      if (!best || score < best.score) best = { el, score }
+      if (el === current) continue;
+      const r = el.getBoundingClientRect();
+      const dx = r.left + r.width / 2 - fx;
+      const dy = r.top + r.height / 2 - fy;
+      const along =
+        key === "ArrowUp"
+          ? -dy
+          : key === "ArrowDown"
+            ? dy
+            : key === "ArrowLeft"
+              ? -dx
+              : dx;
+      if (along <= 1) continue;
+      const across =
+        key === "ArrowUp" || key === "ArrowDown" ? Math.abs(dx) : Math.abs(dy);
+      const score = along + across * 3;
+      if (!best || score < best.score) best = { el, score };
     }
-    if (best) focusEntry(best.el.getAttribute('data-entry-path'))
-  }
+    if (best) focusEntry(best.el.getAttribute("data-entry-path"));
+  };
 
   return (
     <div
       ref={root}
       className="min-h-0 flex-1 overflow-auto p-4"
       onKeyDown={(e) => {
-        if (!(e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return
-        if (e.altKey || e.metaKey || e.ctrlKey) return
-        e.preventDefault()
-        move(e.key)
+        if (!(
+          e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight"
+        ))
+          return;
+        if (e.altKey || e.metaKey || e.ctrlKey) return;
+        e.preventDefault();
+        move(e.key);
       }}
     >
       {groups.map((g) => (
@@ -2706,12 +3211,16 @@ function GridView({
           {g.label && (
             <h3 className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
               {g.label}
-              <span className="text-muted-foreground/60">{g.entries.length}</span>
+              <span className="text-muted-foreground/60">
+                {g.entries.length}
+              </span>
             </h3>
           )}
           <div
             className="grid gap-3"
-            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${size.min}, 1fr))` }}
+            style={{
+              gridTemplateColumns: `repeat(auto-fill, minmax(${size.min}, 1fr))`,
+            }}
           >
             {g.entries.map((entry) => (
               <GridTile
@@ -2728,7 +3237,7 @@ function GridView({
         </section>
       ))}
     </div>
-  )
+  );
 }
 
 function GridTile({
@@ -2739,21 +3248,21 @@ function GridTile({
   focused,
   onFocus,
 }: {
-  entry: Entry
-  actions: EntryActions
-  size: GridSize
-  showLocation: boolean
-  focused: boolean
-  onFocus: () => void
+  entry: Entry;
+  actions: EntryActions;
+  size: GridSize;
+  showLocation: boolean;
+  focused: boolean;
+  onFocus: () => void;
 }) {
-  const { icon: Icon, color } = entryKind(entry)
-  const tint = panelClasses(entry.color)
-  const frameTint = frameClasses(entry.color)
-  const selected = actions.isSelected(entry)
-  const shared = actions.isShared(entry)
-  const linked = entry.ref != null
-  const cut = actions.isCut(entry)
-  const { isTarget, ...drag } = moveDragProps(entry, actions)
+  const { icon: Icon, color } = entryKind(entry);
+  const tint = panelClasses(entry.color);
+  const frameTint = frameClasses(entry.color);
+  const selected = actions.isSelected(entry);
+  const shared = actions.isShared(entry);
+  const linked = entry.ref != null;
+  const cut = actions.isCut(entry);
+  const { isTarget, ...drag } = moveDragProps(entry, actions);
   return (
     <EntryMenu entry={entry} actions={actions}>
       <div
@@ -2762,23 +3271,23 @@ function GridTile({
         aria-selected={selected}
         data-entry-path={entry.path}
         className={`flex cursor-default flex-col gap-2 rounded-lg border p-2 text-center select-none focus:ring-2 focus:ring-primary ${
-          cut ? CUT_CLASSES : 'outline-none'
+          cut ? CUT_CLASSES : "outline-none"
         } ${
           isTarget
-            ? 'border-primary bg-primary/15 ring-2 ring-primary'
+            ? "border-primary bg-primary/15 ring-2 ring-primary"
             : selected
-              ? 'border-primary/40 bg-primary/10'
-              : 'border-transparent hover:border-border hover:bg-accent/60'
+              ? "border-primary/40 bg-primary/10"
+              : "border-transparent hover:border-border hover:bg-accent/60"
         }`}
         {...drag}
         onFocus={onFocus}
         onClick={(e) => actions.select(entry, intentOf(e))}
         onDoubleClick={() => actions.open(entry)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') actions.open(entry)
-          else if (e.key === ' ') {
-            e.preventDefault()
-            actions.select(entry, 'toggle')
+          if (e.key === "Enter") actions.open(entry);
+          else if (e.key === " ") {
+            e.preventDefault();
+            actions.select(entry, "toggle");
           }
         }}
       >
@@ -2786,15 +3295,16 @@ function GridTile({
           {canThumb(entry) ? (
             <Thumbnail
               entry={entry}
-              className={`grid aspect-square w-full place-items-center overflow-hidden rounded-md bg-muted/60 ${frameTint ?? ''
-                }`}
+              className={`grid aspect-square w-full place-items-center overflow-hidden rounded-md bg-muted/60 ${
+                frameTint ?? ""
+              }`}
             >
               <Icon className={`${size.icon} ${color}`} />
             </Thumbnail>
           ) : (
             <div
               className={`grid aspect-square w-full place-items-center rounded-md ${
-                tint ?? 'bg-muted/60'
+                tint ?? "bg-muted/60"
               }`}
             >
               <Icon className={tint ? size.icon : `${size.icon} ${color}`} />
@@ -2826,25 +3336,30 @@ function GridTile({
             />
           ) : (
             <p
-              className={`line-clamp-2 wrap-anywhere text-sm inline-block px-2 max-w-full rounded-md ${tint ?? 'bg-none'}`}
+              className={`line-clamp-2 wrap-anywhere text-sm inline-block px-2 max-w-full rounded-md ${tint ?? "bg-none"}`}
               title={displayName(entry)}
             >
               {shortName(displayName(entry))}
             </p>
           )}
           {showLocation ? (
-            <p className="truncate text-xs text-muted-foreground" title={locationLabel(entry.path)}>
+            <p
+              className="truncate text-xs text-muted-foreground"
+              title={locationLabel(entry.path)}
+            >
               {locationLabel(entry.path)}
             </p>
           ) : (
             <p className="truncate text-xs tabular-nums text-muted-foreground">
-              {entry.is_dir ? childLabel(actions.childCount(entry.path)) : formatSize(entry.size)}
+              {entry.is_dir
+                ? childLabel(actions.childCount(entry.path))
+                : formatSize(entry.size)}
             </p>
           )}
         </div>
       </div>
     </EntryMenu>
-  )
+  );
 }
 
 /**
@@ -2854,52 +3369,52 @@ function NameDialog({
   title,
   label,
   submitLabel,
-  initial = '',
+  initial = "",
   paste = false,
   onSubmit,
   onClose,
 }: {
-  title: string
-  label: string
-  submitLabel: string
-  initial?: string
+  title: string;
+  label: string;
+  submitLabel: string;
+  initial?: string;
   // paste shows a button that fills the field from the clipboard — for the
   // download dialog, where the value is a URL the user just copied.
-  paste?: boolean
-  onSubmit: (name: string) => Promise<void>
-  onClose: () => void
+  paste?: boolean;
+  onSubmit: (name: string) => Promise<void>;
+  onClose: () => void;
 }) {
-  const [value, setValue] = useState(initial)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState('')
+  const [value, setValue] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
   async function submit(event: React.SubmitEvent) {
-    event.preventDefault()
-    const name = value.trim()
+    event.preventDefault();
+    const name = value.trim();
     if (!name) {
-      setErr('Enter a name.')
-      return
+      setErr("Enter a name.");
+      return;
     }
-    setBusy(true)
-    setErr('')
+    setBusy(true);
+    setErr("");
     try {
-      await onSubmit(name)
-      onClose()
+      await onSubmit(name);
+      onClose();
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : 'Something went wrong.')
-      setBusy(false)
+      setErr(e instanceof ApiError ? e.message : "Something went wrong.");
+      setBusy(false);
     }
   }
 
   async function pasteFromClipboard() {
     try {
-      const text = (await navigator.clipboard.readText()).trim()
+      const text = (await navigator.clipboard.readText()).trim();
       if (text) {
-        setValue(text)
-        setErr('')
+        setValue(text);
+        setErr("");
       }
     } catch {
-      setErr('Could not read the clipboard. Paste with ⌘V instead.')
+      setErr("Could not read the clipboard. Paste with ⌘V instead.");
     }
   }
 
@@ -2920,7 +3435,7 @@ function NameDialog({
                 onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => setValue(e.currentTarget.value)}
                 aria-invalid={!!err}
-                className={paste ? 'pr-9' : undefined}
+                className={paste ? "pr-9" : undefined}
               />
               {paste && (
                 <Button
@@ -2942,13 +3457,13 @@ function NameDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={busy}>
-              {busy ? 'Working…' : submitLabel}
+              {busy ? "Working…" : submitLabel}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 /** DeleteDialog confirms a permanent removal of one or many entries. */
@@ -2957,18 +3472,18 @@ function DeleteDialog({
   onConfirm,
   onClose,
 }: {
-  entries: Entry[]
-  onConfirm: () => void
-  onClose: () => void
+  entries: Entry[];
+  onConfirm: () => void;
+  onClose: () => void;
 }) {
-  const many = entries.length > 1
-  const hasFolder = entries.some((e) => e.is_dir)
+  const many = entries.length > 1;
+  const hasFolder = entries.some((e) => e.is_dir);
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {many ? `Move ${entries.length} items to trash?` : 'Move to trash?'}
+            {many ? `Move ${entries.length} items to trash?` : "Move to trash?"}
           </AlertDialogTitle>
           {!many && (
             <p
@@ -2980,17 +3495,19 @@ function DeleteDialog({
           )}
           <AlertDialogDescription>
             {hasFolder
-              ? 'The folders and everything inside go to the trash. You can restore them from there, or empty the trash to remove them for good.'
-              : 'It goes to the trash, where you can restore it or remove it for good.'}
+              ? "The folders and everything inside go to the trash. You can restore them from there, or empty the trash to remove them for good."
+              : "It goes to the trash, where you can restore it or remove it for good."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Move to Trash</AlertDialogAction>
+          <AlertDialogAction onClick={onConfirm}>
+            Move to Trash
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 
 /**
@@ -3006,21 +3523,31 @@ function JobsPanel({
   onResume,
   onCancel,
 }: {
-  jobs: TrackedJob[]
-  onClear: () => void
-  onPause: (id: number) => void
-  onResume: (id: number) => void
-  onCancel: (id: number) => void
+  jobs: TrackedJob[];
+  onClear: () => void;
+  onPause: (id: number) => void;
+  onResume: (id: number) => void;
+  onCancel: (id: number) => void;
 }) {
-  if (jobs.length === 0) return null
-  const active = jobs.filter((j) => j.status === 'pending' || j.status === 'running' || j.status === 'paused').length
+  if (jobs.length === 0) return null;
+  const active = jobs.filter(
+    (j) =>
+      j.status === "pending" || j.status === "running" || j.status === "paused",
+  ).length;
 
   return (
     <div className="w-80 max-w-[calc(100vw-2rem)] rounded-xl border bg-card p-4 shadow-lg">
       <div className="flex items-center">
-        <p className="text-sm font-medium">{active > 0 ? `Working: ${active} active` : 'Tasks'}</p>
+        <p className="text-sm font-medium">
+          {active > 0 ? `Working: ${active} active` : "Tasks"}
+        </p>
         {active === 0 && (
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={onClear}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={onClear}
+          >
             Clear
           </Button>
         )}
@@ -3028,29 +3555,33 @@ function JobsPanel({
 
       <div className="mt-2 max-h-72 space-y-2 overflow-auto">
         {jobs.map((job) => {
-          const inFlight = job.status === 'running' || job.status === 'pending'
-          const paused = job.status === 'paused'
+          const inFlight = job.status === "running" || job.status === "pending";
+          const paused = job.status === "paused";
           // A download alone can pause/resume; the rest only cancel.
-          const canPause = job.kind === 'fetch'
+          const canPause = job.kind === "fetch";
           const right =
-            job.status === 'failed'
-              ? 'Failed'
-              : job.status === 'cancelled'
-                ? 'Cancelled'
-                : job.status === 'done'
-                  ? 'Done'
+            job.status === "failed"
+              ? "Failed"
+              : job.status === "cancelled"
+                ? "Cancelled"
+                : job.status === "done"
+                  ? "Done"
                   : paused
-                    ? 'Paused'
+                    ? "Paused"
                     : job.bytesTotal > 0
                       ? `${Math.round(job.progress * 100)}%`
-                      : formatSize(job.bytesDone)
+                      : formatSize(job.bytesDone);
           return (
             <div key={job.id} className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 truncate text-sm">{job.name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm">
+                  {job.name}
+                </span>
                 <span
                   className={`shrink-0 text-xs tabular-nums ${
-                    job.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'
+                    job.status === "failed"
+                      ? "text-destructive"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {right}
@@ -3060,10 +3591,16 @@ function JobsPanel({
                     variant="ghost"
                     size="icon"
                     className="size-6 shrink-0"
-                    title={paused ? 'Resume' : 'Pause'}
-                    onClick={() => (paused ? onResume(job.id) : onPause(job.id))}
+                    title={paused ? "Resume" : "Pause"}
+                    onClick={() =>
+                      paused ? onResume(job.id) : onPause(job.id)
+                    }
                   >
-                    {paused ? <PlayIcon className="size-3.5" /> : <PauseIcon className="size-3.5" />}
+                    {paused ? (
+                      <PlayIcon className="size-3.5" />
+                    ) : (
+                      <PauseIcon className="size-3.5" />
+                    )}
                   </Button>
                 )}
                 {(inFlight || paused) && (
@@ -3079,18 +3616,19 @@ function JobsPanel({
                 )}
               </div>
               {(inFlight || paused) && <Progress value={job.progress * 100} />}
-              {job.status === 'running' && job.speed > 0 && (
+              {job.status === "running" && job.speed > 0 && (
                 <p className="text-xs tabular-nums text-muted-foreground">
                   {formatSize(job.speed)}/s
-                  {job.bytesTotal > 0 && ` · ${formatSize(job.bytesDone)} / ${formatSize(job.bytesTotal)}`}
+                  {job.bytesTotal > 0 &&
+                    ` · ${formatSize(job.bytesDone)} / ${formatSize(job.bytesTotal)}`}
                 </p>
               )}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -3103,20 +3641,22 @@ function Transfers({
   onCancel,
   onCancelTransfer,
 }: {
-  transfers: UploadProgress[]
-  onClear: () => void
-  onCancel: () => void
-  onCancelTransfer: (id: string) => void
+  transfers: UploadProgress[];
+  onClear: () => void;
+  onCancel: () => void;
+  onCancelTransfer: (id: string) => void;
 }) {
-  if (transfers.length === 0) return null
-  const remaining = transfers.filter((t) => t.status === 'uploading' || t.status === 'queued').length
-  const busy = remaining > 0
+  if (transfers.length === 0) return null;
+  const remaining = transfers.filter(
+    (t) => t.status === "uploading" || t.status === "queued",
+  ).length;
+  const busy = remaining > 0;
 
   return (
     <div className="w-80 max-w-[calc(100vw-2rem)] rounded-xl border bg-card p-4 shadow-lg">
       <div className="flex items-center">
         <p className="text-sm font-medium">
-          {busy ? `Uploading: ${remaining} left` : 'Transfers'}
+          {busy ? `Uploading: ${remaining} left` : "Transfers"}
         </p>
         {busy ? (
           <Button
@@ -3130,7 +3670,12 @@ function Transfers({
             <XIcon className="size-4" />
           </Button>
         ) : (
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={onClear}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={onClear}
+          >
             Clear
           </Button>
         )}
@@ -3142,27 +3687,30 @@ function Transfers({
             <div className="flex items-center gap-4">
               <span
                 className={`min-w-0 flex-1 truncate text-sm ${
-                  transfer.status === 'queued' ? 'text-muted-foreground' : ''
-                } ${transfer.status === 'cancelled' ? 'text-muted-foreground line-through' : ''}`}
+                  transfer.status === "queued" ? "text-muted-foreground" : ""
+                } ${transfer.status === "cancelled" ? "text-muted-foreground line-through" : ""}`}
               >
                 {transfer.name}
               </span>
               <span
                 className={`shrink-0 text-xs tabular-nums ${
-                  transfer.status === 'error' ? 'text-destructive' : 'text-muted-foreground'
+                  transfer.status === "error"
+                    ? "text-destructive"
+                    : "text-muted-foreground"
                 }`}
               >
-                {transfer.status === 'error'
-                  ? (transfer.error ?? 'failed')
-                  : transfer.status === 'queued'
-                    ? 'Waiting…'
-                    : transfer.status === 'done'
-                      ? 'Done'
-                      : transfer.status === 'cancelled'
-                        ? 'Cancelled'
+                {transfer.status === "error"
+                  ? (transfer.error ?? "failed")
+                  : transfer.status === "queued"
+                    ? "Waiting…"
+                    : transfer.status === "done"
+                      ? "Done"
+                      : transfer.status === "cancelled"
+                        ? "Cancelled"
                         : `${formatSize(transfer.sent)} / ${formatSize(transfer.total)}`}
               </span>
-              {(transfer.status === 'uploading' || transfer.status === 'queued') && (
+              {(transfer.status === "uploading" ||
+                transfer.status === "queued") && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -3175,11 +3723,16 @@ function Transfers({
                 </Button>
               )}
             </div>
-            {transfer.status === 'uploading' && (
+            {transfer.status === "uploading" && (
               <div className="flex items-center gap-2">
-                <Progress value={transfer.total ? (transfer.sent / transfer.total) * 100 : 0} className="flex-1" />
+                <Progress
+                  value={
+                    transfer.total ? (transfer.sent / transfer.total) * 100 : 0
+                  }
+                  className="flex-1"
+                />
                 <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                  {transfer.speed ? `${formatSize(transfer.speed)}/s` : '…'}
+                  {transfer.speed ? `${formatSize(transfer.speed)}/s` : "…"}
                 </span>
               </div>
             )}
@@ -3187,5 +3740,5 @@ function Transfers({
         ))}
       </div>
     </div>
-  )
+  );
 }

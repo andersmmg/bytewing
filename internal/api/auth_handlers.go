@@ -125,6 +125,10 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 
 type setupStatusResponse struct {
 	NeedsSetup bool `json:"needs_setup"`
+
+	// MinPasswordLength lets the pre-sign-in forms apply the instance's
+	// password rule before a session exists.
+	MinPasswordLength int `json:"min_password_length"`
 }
 
 // handleSetupStatus lets the interface decide between a sign-in form and a
@@ -136,7 +140,10 @@ func (s *Server) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, r, http.StatusOK, setupStatusResponse{NeedsSetup: needed})
+	writeJSON(w, r, http.StatusOK, setupStatusResponse{
+		NeedsSetup:        needed,
+		MinPasswordLength: s.auth.MinPasswordLength(),
+	})
 }
 
 type setupRequest struct {

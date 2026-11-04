@@ -31,4 +31,9 @@
     "command": "make generate",
     "hide": "on_success",
   },
+  {
+    "label": "Go checks",
+    "command": "sh -c 'go run golang.org/x/vuln/cmd/govulncheck@latest ./...; vuln_status=$?; go run github.com/securego/gosec/v2/cmd/gosec@latest -exclude-dir=internal/db/sqlcgen -exclude=G703 ./...; gosec_status=$?; exit $((vuln_status || gosec_status))'",
+    "hide": "on_success",
+  },
 ]

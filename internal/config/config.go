@@ -33,6 +33,8 @@ const (
 
 	EnvAllowURLFetch = "BYTEWING_ALLOW_URL_FETCH"
 
+	EnvMinPasswordLength = "BYTEWING_MIN_PASSWORD_LENGTH" // #nosec G101 -- not a credential
+
 	// Backend and object-storage settings
 	EnvThumbMaxBytes     = "BYTEWING_THUMB_MAX_BYTES"
 	EnvPreviewMaxBytes   = "BYTEWING_PREVIEW_MAX_BYTES"
@@ -89,6 +91,18 @@ const (
 	// job will fetch: a video can be gigabytes, and one frame is not
 	// worth moving all of it.
 	DefaultThumbMaxBytes = 512 << 20
+
+	// DefaultMinPasswordLength is the minimum password length when
+	// BYTEWING_MIN_PASSWORD_LENGTH is unset. It mirrors auth.MinPasswordLength.
+	DefaultMinPasswordLength = 10
+
+	// MinPasswordLengthFloor is the lowest value BYTEWING_MIN_PASSWORD_LENGTH
+	// accepts. It mirrors auth.MinPasswordLengthFloor.
+	MinPasswordLengthFloor = 3
+
+	// MaxPasswordLength is the longest password auth accepts. A minimum above
+	// it could never be satisfied. It mirrors auth.MaxPasswordLength.
+	MaxPasswordLength = 1024
 )
 
 // Config is a validated instance configuration.
@@ -126,6 +140,9 @@ type Config struct {
 	ReadOnly bool
 
 	AllowURLFetch bool
+
+	// MinPasswordLength is the shortest password an account may choose.
+	MinPasswordLength int
 
 	// PreviewMaxBytes bounds server-side preview reads.
 	PreviewMaxBytes int64
@@ -195,12 +212,13 @@ func (c Config) Origin() string {
 // Load reads the configuration from the environment.
 func Load() (Config, error) {
 	cfg := Config{
-		DataDir:         os.Getenv(EnvDataDir),
-		ConfigDir:       os.Getenv(EnvConfigDir),
-		Listen:          valueOr(os.Getenv(EnvListen), DefaultListen),
-		Reserve:         storage.DefaultReserve,
-		PreviewMaxBytes: DefaultPreviewMaxBytes,
-		ThumbMaxBytes:   DefaultThumbMaxBytes,
+		DataDir:           os.Getenv(EnvDataDir),
+		ConfigDir:         os.Getenv(EnvConfigDir),
+		Listen:            valueOr(os.Getenv(EnvListen), DefaultListen),
+		Reserve:           storage.DefaultReserve,
+		MinPasswordLength: DefaultMinPasswordLength,
+		PreviewMaxBytes:   DefaultPreviewMaxBytes,
+		ThumbMaxBytes:     DefaultThumbMaxBytes,
 	}
 
 	var err error
@@ -259,6 +277,22 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("config: %s must be true or false: %w", EnvAllowURLFetch, err)
 		}
 		cfg.AllowURLFetch = b
+	}
+	if raw := strings.TrimSpace(os.Getenv(EnvMinPasswordLength)); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			return Config{}, fmt.Errorf("config: %s must be a whole number of characters, got %q",
+				EnvMinPasswordLength, raw)
+		}
+		if n < MinPasswordLengthFloor {
+			return Config{}, fmt.Errorf("config: %s must be at least %d, got %d",
+				EnvMinPasswordLength, MinPasswordLengthFloor, n)
+		}
+		if n > MaxPasswordLength {
+			return Config{}, fmt.Errorf("config: %s must be at most %d, got %d",
+				EnvMinPasswordLength, MaxPasswordLength, n)
+		}
+		cfg.MinPasswordLength = n
 	}
 	if raw := strings.TrimSpace(os.Getenv(EnvPreviewMaxBytes)); raw != "" {
 		n, err := parseBytes(EnvPreviewMaxBytes, raw)

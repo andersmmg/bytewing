@@ -993,15 +993,18 @@ type configResponse struct {
 
 	URLFetch bool `json:"url_fetch"`
 
+	MinPasswordLength int `json:"min_password_length"`
+
 	Version string `json:"version"`
 }
 
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, r, http.StatusOK, configResponse{
-		InlinePreview: !s.singleOrigin || s.objectStorage,
-		ObjectStorage: s.objectStorage,
-		URLFetch:      s.urlFetch,
-		Version:       s.version,
+		InlinePreview:     !s.singleOrigin || s.objectStorage,
+		ObjectStorage:     s.objectStorage,
+		URLFetch:          s.urlFetch,
+		MinPasswordLength: s.auth.MinPasswordLength(),
+		Version:           s.version,
 	})
 }
 

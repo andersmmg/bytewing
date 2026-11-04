@@ -81,9 +81,11 @@ function isMobile(ua?: string): boolean {
  */
 export function SettingsScreen({
   me,
+  minPasswordLength,
   onSignedOut,
 }: {
   me: User;
+  minPasswordLength: number;
   onSignedOut: () => void;
 }) {
   return (
@@ -112,7 +114,7 @@ export function SettingsScreen({
           </section>
 
           <AppearanceSection />
-          <PasswordSection />
+          <PasswordSection minPasswordLength={minPasswordLength} />
           <TwoFactorSection initiallyEnabled={!!me.totp_enabled} />
           <PasskeysSection />
           <RecoveryCodesSection />
@@ -654,7 +656,7 @@ function RecoveryCodesSection() {
   );
 }
 
-function PasswordSection() {
+function PasswordSection({ minPasswordLength }: { minPasswordLength: number }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -665,7 +667,8 @@ function PasswordSection() {
     event.preventDefault();
     const found: FieldErrors = {};
     if (!current) found.current_password = "Enter your current password.";
-    if ([...next].length < 12) found.password = "Use at least 12 characters.";
+    if ([...next].length < minPasswordLength)
+      found.password = `Use at least ${minPasswordLength} characters.`;
     if (confirm !== next) found.confirm = "These do not match.";
     setErrors(found);
     if (Object.values(found).some(Boolean)) return;

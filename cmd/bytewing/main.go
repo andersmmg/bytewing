@@ -220,7 +220,10 @@ func run() error {
 	if err != nil {
 		slog.Warn("passkeys are unavailable on this instance", "reason", err)
 	}
-	authService := auth.New(database, auth.WithPasskeys(passkeys))
+	authService := auth.New(database,
+		auth.WithPasskeys(passkeys),
+		auth.WithMinPasswordLength(cfg.MinPasswordLength),
+	)
 	if err := announceSetup(context.Background(), authService, cfg); err != nil {
 		return err
 	}
