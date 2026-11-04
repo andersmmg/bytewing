@@ -57,6 +57,12 @@ type client struct {
 }
 
 func newClient(t *testing.T, mutate ...func(*api.Options)) *client {
+	return newClientWithAuth(t, nil, mutate...)
+}
+
+// newClientWithAuth is newClient with extra options for the auth service, for
+// tests that need a nondefault password rule.
+func newClientWithAuth(t *testing.T, authOpts []auth.Option, mutate ...func(*api.Options)) *client {
 	t.Helper()
 
 	database, err := db.Open(t.Context(), db.Config{Dir: t.TempDir()})
@@ -80,12 +86,14 @@ func newClient(t *testing.T, mutate ...func(*api.Options)) *client {
 	if err != nil {
 		t.Fatalf("webauthn: %v", err)
 	}
-	service := auth.New(database,
+	serviceOpts := []auth.Option{
 		auth.WithParams(auth.Params{
 			Memory: 8, Iterations: 1, Parallelism: 1, SaltLength: 16, KeyLength: 32,
 		}),
 		auth.WithPasskeys(passkeys),
-	)
+	}
+	serviceOpts = append(serviceOpts, authOpts...)
+	service := auth.New(database, serviceOpts...)
 
 	// A running worker, so a background copy actually completes in tests.
 	jobs := job.New(database, job.WithPollInterval(20*time.Millisecond))
@@ -267,20 +275,21 @@ type listing struct {
 func TestMinPasswordLengthIsPublished(t *testing.T) {
 	t.Parallel()
 
-	c := newClient(t)
+	const configured = 12
+	c := newClientWithAuth(t, []auth.Option{auth.WithMinPasswordLength(configured)})
 	type lengthShape struct {
 		MinPasswordLength int `json:"min_password_length"`
 	}
 
 	_, raw := c.do(http.MethodGet, "/api/v1/setup", nil)
-	if got := decode[lengthShape](t, raw).MinPasswordLength; got != auth.MinPasswordLength {
-		t.Errorf("setup min_password_length = %d, want %d", got, auth.MinPasswordLength)
+	if got := decode[lengthShape](t, raw).MinPasswordLength; got != configured {
+		t.Errorf("setup min_password_length = %d, want %d", got, configured)
 	}
 
 	c.setUp()
 	_, raw = c.do(http.MethodGet, "/api/v1/config", nil)
-	if got := decode[lengthShape](t, raw).MinPasswordLength; got != auth.MinPasswordLength {
-		t.Errorf("config min_password_length = %d, want %d", got, auth.MinPasswordLength)
+	if got := decode[lengthShape](t, raw).MinPasswordLength; got != configured {
+		t.Errorf("config min_password_length = %d, want %d", got, configured)
 	}
 }
 

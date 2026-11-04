@@ -159,8 +159,8 @@ func TestMinPasswordLength(t *testing.T) {
 		t.Errorf("MinPasswordLength = %d, want default %d", cfg.MinPasswordLength, DefaultMinPasswordLength)
 	}
 
-	// The floor is accepted; there is no upper bound.
-	for _, want := range []int{MinPasswordLengthFloor, 12, 128} {
+	// Both ends of the range are accepted.
+	for _, want := range []int{MinPasswordLengthFloor, 12, 128, MaxPasswordLength} {
 		t.Setenv(EnvMinPasswordLength, strconv.Itoa(want))
 		cfg, err = Load()
 		if err != nil {
@@ -171,7 +171,7 @@ func TestMinPasswordLength(t *testing.T) {
 		}
 	}
 
-	for _, raw := range []string{"2", "0", "-1", "ten", "10.5"} {
+	for _, raw := range []string{"2", "0", "-1", "ten", "10.5", strconv.Itoa(MaxPasswordLength + 1)} {
 		t.Setenv(EnvMinPasswordLength, raw)
 		if _, err := Load(); err == nil || !strings.Contains(err.Error(), EnvMinPasswordLength) {
 			t.Errorf("Load with %s=%q = %v, want an %s error", EnvMinPasswordLength, raw, err, EnvMinPasswordLength)

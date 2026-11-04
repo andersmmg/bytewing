@@ -39,8 +39,8 @@ quota.
 ### `BYTEWING_MIN_PASSWORD_LENGTH`
 
 _Optional, default `10`._ The shortest password an account may choose. The
-value must be a whole number of at least `3`; there is no upper bound. The
-sign-in, setup, invite and password-reset forms apply the same limit.
+value must be a whole number from `3` to `1024`. The setup, invite,
+password-reset and change-password forms apply the same limit.
 
 ## Storage
 

@@ -274,6 +274,9 @@ func New(database *db.DB, opts ...Option) *Service {
 	if s.minPasswordLength < MinPasswordLengthFloor {
 		s.minPasswordLength = MinPasswordLengthFloor
 	}
+	if s.minPasswordLength > MaxPasswordLength {
+		s.minPasswordLength = MaxPasswordLength
+	}
 	// Built after the options so the limiters share whatever clock the service
 	// ended up with.
 	s.byAddress = NewLimiter(defaultIPLimit, defaultLoginWindow, s.now)

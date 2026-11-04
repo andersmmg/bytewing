@@ -188,3 +188,14 @@ func TestServiceRaisesMinimumToFloor(t *testing.T) {
 		t.Errorf("minPasswordLength = %d, want the floor %d", f.svc.minPasswordLength, MinPasswordLengthFloor)
 	}
 }
+
+// TestServiceCapsMinimumAtMax checks that an option above the longest accepted
+// password cannot set a minimum nothing could satisfy.
+func TestServiceCapsMinimumAtMax(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t, WithMinPasswordLength(MaxPasswordLength+1))
+	if f.svc.minPasswordLength != MaxPasswordLength {
+		t.Errorf("minPasswordLength = %d, want %d", f.svc.minPasswordLength, MaxPasswordLength)
+	}
+}

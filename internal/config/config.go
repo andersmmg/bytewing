@@ -99,6 +99,10 @@ const (
 	// MinPasswordLengthFloor is the lowest value BYTEWING_MIN_PASSWORD_LENGTH
 	// accepts. It mirrors auth.MinPasswordLengthFloor.
 	MinPasswordLengthFloor = 3
+
+	// MaxPasswordLength is the longest password auth accepts. A minimum above
+	// it could never be satisfied. It mirrors auth.MaxPasswordLength.
+	MaxPasswordLength = 1024
 )
 
 // Config is a validated instance configuration.
@@ -284,7 +288,10 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("config: %s must be at least %d, got %d",
 				EnvMinPasswordLength, MinPasswordLengthFloor, n)
 		}
-		// There is no upper bound.
+		if n > MaxPasswordLength {
+			return Config{}, fmt.Errorf("config: %s must be at most %d, got %d",
+				EnvMinPasswordLength, MaxPasswordLength, n)
+		}
 		cfg.MinPasswordLength = n
 	}
 	if raw := strings.TrimSpace(os.Getenv(EnvPreviewMaxBytes)); raw != "" {
