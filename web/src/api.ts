@@ -263,7 +263,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  setupStatus: () => request<{ needs_setup: boolean }>("/api/v1/setup"),
+  setupStatus: () =>
+    request<{ needs_setup: boolean; min_password_length: number }>(
+      "/api/v1/setup",
+    ),
 
   completeSetup: (token: string, username: string, password: string) =>
     request<{ user: User; recovery_codes?: string[] }>("/api/v1/setup", {
@@ -525,6 +528,7 @@ export const api = {
       inline_preview: boolean;
       object_storage: boolean;
       url_fetch: boolean;
+      min_password_length: number;
       version: string;
     }>("/api/v1/config"),
 

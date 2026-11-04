@@ -261,6 +261,29 @@ type listing struct {
 	Entries []entry `json:"entries"`
 }
 
+// TestMinPasswordLengthIsPublished checks that both the open setup probe and
+// the signed-in config response carry the server's password rule, so the forms
+// can apply it before and after sign-in.
+func TestMinPasswordLengthIsPublished(t *testing.T) {
+	t.Parallel()
+
+	c := newClient(t)
+	type lengthShape struct {
+		MinPasswordLength int `json:"min_password_length"`
+	}
+
+	_, raw := c.do(http.MethodGet, "/api/v1/setup", nil)
+	if got := decode[lengthShape](t, raw).MinPasswordLength; got != auth.MinPasswordLength {
+		t.Errorf("setup min_password_length = %d, want %d", got, auth.MinPasswordLength)
+	}
+
+	c.setUp()
+	_, raw = c.do(http.MethodGet, "/api/v1/config", nil)
+	if got := decode[lengthShape](t, raw).MinPasswordLength; got != auth.MinPasswordLength {
+		t.Errorf("config min_password_length = %d, want %d", got, auth.MinPasswordLength)
+	}
+}
+
 func TestHealth(t *testing.T) {
 	t.Parallel()
 

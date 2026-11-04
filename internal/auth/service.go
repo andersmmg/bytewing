@@ -215,10 +215,11 @@ type Service struct {
 	reads    *sqlcgen.Queries
 	writes   *sqlcgen.Queries
 
-	params     Params
-	sessionTTL time.Duration
-	setupTTL   time.Duration
-	now        func() time.Time
+	params            Params
+	sessionTTL        time.Duration
+	setupTTL          time.Duration
+	minPasswordLength int
+	now               func() time.Time
 
 	byAddress *Limiter
 	byAccount *Limiter
@@ -245,20 +246,33 @@ func WithParams(p Params) Option {
 	return func(s *Service) { s.params = p }
 }
 
+// WithMinPasswordLength sets the shortest password an account may choose.
+// Values below [MinPasswordLengthFloor] are raised to it.
+func WithMinPasswordLength(n int) Option {
+	return func(s *Service) { s.minPasswordLength = n }
+}
+
 // New builds a Service over an open database.
 func New(database *db.DB, opts ...Option) *Service {
 	s := &Service{
-		database:   database,
-		reads:      sqlcgen.New(database.Read),
-		writes:     sqlcgen.New(database.Write),
-		params:     DefaultParams,
-		sessionTTL: DefaultSessionTTL,
-		setupTTL:   DefaultSetupTTL,
-		now:        time.Now,
-		ceremonies: newCeremonyStore(),
+		database:          database,
+		reads:             sqlcgen.New(database.Read),
+		writes:            sqlcgen.New(database.Write),
+		params:            DefaultParams,
+		sessionTTL:        DefaultSessionTTL,
+		setupTTL:          DefaultSetupTTL,
+		minPasswordLength: MinPasswordLength,
+		now:               time.Now,
+		ceremonies:        newCeremonyStore(),
 	}
 	for _, opt := range opts {
 		opt(s)
+	}
+	if s.minPasswordLength <= 0 {
+		s.minPasswordLength = MinPasswordLength
+	}
+	if s.minPasswordLength < MinPasswordLengthFloor {
+		s.minPasswordLength = MinPasswordLengthFloor
 	}
 	// Built after the options so the limiters share whatever clock the service
 	// ended up with.
@@ -329,7 +343,7 @@ func (s *Service) CompleteSetup(ctx context.Context, token, username, password s
 	if err != nil {
 		return User{}, err
 	}
-	if err := ValidatePassword(password, normalised); err != nil {
+	if err := s.validatePassword(password, normalised); err != nil {
 		return User{}, err
 	}
 	username = normalised
@@ -439,7 +453,7 @@ func (s *Service) AcceptInvitation(ctx context.Context, token, username, passwor
 	if err != nil {
 		return User{}, err
 	}
-	if err := ValidatePassword(password, normalised); err != nil {
+	if err := s.validatePassword(password, normalised); err != nil {
 		return User{}, err
 	}
 	username = normalised
@@ -705,7 +719,7 @@ func (s *Service) ChangePassword(ctx context.Context, userID int64, current, nex
 	if err != nil || !ok {
 		return ErrInvalidCredentials
 	}
-	if err := ValidatePassword(next, row.Username); err != nil {
+	if err := s.validatePassword(next, row.Username); err != nil {
 		return err
 	}
 

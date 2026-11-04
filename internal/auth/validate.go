@@ -15,7 +15,13 @@ import (
 // predictable substitutions of short passwords, which is worse than a long one
 // made of ordinary words.
 const (
-	MinPasswordLength = 12
+	// MinPasswordLength is the default minimum password length. Operators
+	// may set another value with BYTEWING_MIN_PASSWORD_LENGTH.
+	MinPasswordLength = 10
+
+	// MinPasswordLengthFloor is the lowest value an operator may set.
+	MinPasswordLengthFloor = 3
+
 	MaxPasswordLength = 1024
 	MinUsernameLength = 2
 	MaxUsernameLength = 64
@@ -119,8 +125,15 @@ func ValidateUsername(username string) (string, error) {
 	return normalised, nil
 }
 
-// ValidatePassword checks a password against the username it will protect.
+// ValidatePassword checks a password against the username it will protect,
+// using the default minimum length.
 func ValidatePassword(password, username string) error {
+	return validatePassword(password, username, MinPasswordLength)
+}
+
+// validatePassword checks a password against the username it will protect and
+// the instance's configured minimum length.
+func validatePassword(password, username string, minLength int) error {
 	// Measured in runes so that a passphrase in a non-Latin script is not
 	// rejected for being "short" when it is nothing of the sort.
 	length := utf8.RuneCountInString(password)
@@ -128,9 +141,9 @@ func ValidatePassword(password, username string) error {
 	if length == 0 {
 		return invalid("password", "Choose a password.")
 	}
-	if length < MinPasswordLength {
+	if length < minLength {
 		return invalid("password",
-			fmt.Sprintf("Use at least %d characters. A few ordinary words beat a short, clever one.", MinPasswordLength))
+			fmt.Sprintf("Use at least %d characters. A few ordinary words beat a short, clever one.", minLength))
 	}
 	if length > MaxPasswordLength {
 		// Argon2's cost grows with the input, so an unbounded password is a way
@@ -141,9 +154,11 @@ func ValidatePassword(password, username string) error {
 		return invalid("password", "A password of only spaces is not one.")
 	}
 
-	// Length alone is satisfied by twelve of the same character, which is not
-	// what the rule is for.
-	if distinctRunes(password) < 4 {
+	// Length alone is satisfied by a run of the same character, which is not
+	// what the rule is for. Require up to four distinct characters, but never
+	// more than the minimum, so a low minimum can still be met.
+	varietyFloor := min(minLength, 4)
+	if distinctRunes(password) < varietyFloor {
 		return invalid("password", "Use more variety than a repeated character.")
 	}
 
@@ -155,6 +170,16 @@ func ValidatePassword(password, username string) error {
 	}
 
 	return nil
+}
+
+// MinPasswordLength returns the shortest password the service accepts.
+func (s *Service) MinPasswordLength() int {
+	return s.minPasswordLength
+}
+
+// validatePassword checks a password against the service's configured minimum.
+func (s *Service) validatePassword(password, username string) error {
+	return validatePassword(password, username, s.minPasswordLength)
 }
 
 func isUsernameStart(r rune) bool {

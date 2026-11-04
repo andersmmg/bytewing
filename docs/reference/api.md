@@ -52,68 +52,68 @@ Field-level validation errors add an `errors` map of field name to message.
 These are the only endpoints that work without a session or token. They are how
 an account gets created or regained in an instance that never sends email.
 
-| Method | Path                            | Description                                                       |
-| ------ | ------------------------------- | ----------------------------------------------------------------- |
-| `GET`  | `/healthz`                      | Liveness check                                                    |
-| `GET`  | `/api/v1/setup`                 | `{ "needs_setup": true }` while no account exists                 |
-| `POST` | `/api/v1/setup`                 | Create the first administrator: `{ "token", "username", "password" }`; returns a session token, sets the cookie, and returns the recovery codes |
-| `GET`  | `/api/v1/auth/passkeys/status`  | Whether the instance has any passkeys at all                      |
-| `POST` | `/api/v1/auth/reset`            | Reset a forgotten password: `{ "username", "code", "new_password" }`; ends every session |
-| `GET`  | `/api/v1/invitations/check`     | Validate an invitation token (`?token=`)                          |
-| `POST` | `/api/v1/invitations/accept`    | Accept it: `{ "token", "username", "password" }`                 |
+| Method | Path                           | Description                                                                                                                                     |
+| ------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/healthz`                     | Liveness check                                                                                                                                  |
+| `GET`  | `/api/v1/setup`                | `{ "needs_setup": true, "min_password_length": 10 }` while no account exists                                                                    |
+| `POST` | `/api/v1/setup`                | Create the first administrator: `{ "token", "username", "password" }`; returns a session token, sets the cookie, and returns the recovery codes |
+| `GET`  | `/api/v1/auth/passkeys/status` | Whether the instance has any passkeys at all                                                                                                    |
+| `POST` | `/api/v1/auth/reset`           | Reset a forgotten password: `{ "username", "code", "new_password" }`; ends every session                                                        |
+| `GET`  | `/api/v1/invitations/check`    | Validate an invitation token (`?token=`)                                                                                                        |
+| `POST` | `/api/v1/invitations/accept`   | Accept it: `{ "token", "username", "password" }`                                                                                                |
 
 The setup token is printed in the server log on first start and expires after 24
 hours.
 
 ## Authentication & account
 
-| Method   | Path                                       | Description                                                                 |
-| -------- | ------------------------------------------ | --------------------------------------------------------------------------- |
-| `POST`   | `/api/v1/auth/login`                       | Sign in: `{ "username", "password", "totp_code?" }`; sets the session cookie |
-| `POST`   | `/api/v1/auth/passkeys/login/options`      | Start a passkey sign-in; body `{ "username?": "…" }`                        |
-| `POST`   | `/api/v1/auth/passkeys/login/verify`       | Finish it: `{ "ceremony_id", "credential" }`; sets the cookie              |
-| `POST`   | `/api/v1/auth/logout`                      | Revoke the current session                                                  |
-| `GET`    | `/api/v1/auth/me`                          | The signed-in account                                                       |
-| `PUT`    | `/api/v1/auth/theme`                       | Set the interface colour theme `{ "theme": "pine" }`; `""` resets           |
-| `POST`   | `/api/v1/auth/password`                    | Change password: `{ "current_password", "new_password" }`; ends other sessions |
-| `GET`    | `/api/v1/auth/sessions`                    | List active sessions, with device and location                              |
-| `POST`   | `/api/v1/auth/sessions/revoke-others`      | Sign out every other device                                                 |
-| `DELETE` | `/api/v1/auth/sessions/{id}`               | End one session                                                             |
-| `POST`   | `/api/v1/auth/totp/enroll`                 | Mint a candidate TOTP secret and its `otpauth://` URI                       |
-| `POST`   | `/api/v1/auth/totp/enable`                 | Confirm it: `{ "secret", "code" }`                                         |
-| `POST`   | `/api/v1/auth/totp/disable`                | Turn two-factor off: `{ "code" }`                                          |
-| `GET`    | `/api/v1/auth/passkeys`                    | List the passkeys on the account                                            |
-| `POST`   | `/api/v1/auth/passkeys/register/options`   | Start registering: `{ "password" }`                                       |
-| `POST`   | `/api/v1/auth/passkeys/register/verify`    | Finish it: `{ "ceremony_id", "name", "credential" }`                       |
-| `DELETE` | `/api/v1/auth/passkeys/{id}`               | Remove a passkey: `{ "password" }`                                        |
-| `GET`    | `/api/v1/auth/recovery`                    | How many unused recovery codes remain                                       |
-| `POST`   | `/api/v1/auth/recovery`                    | Replace the set; the new codes are returned once                            |
+| Method   | Path                                     | Description                                                                    |
+| -------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| `POST`   | `/api/v1/auth/login`                     | Sign in: `{ "username", "password", "totp_code?" }`; sets the session cookie   |
+| `POST`   | `/api/v1/auth/passkeys/login/options`    | Start a passkey sign-in; body `{ "username?": "…" }`                           |
+| `POST`   | `/api/v1/auth/passkeys/login/verify`     | Finish it: `{ "ceremony_id", "credential" }`; sets the cookie                  |
+| `POST`   | `/api/v1/auth/logout`                    | Revoke the current session                                                     |
+| `GET`    | `/api/v1/auth/me`                        | The signed-in account                                                          |
+| `PUT`    | `/api/v1/auth/theme`                     | Set the interface colour theme `{ "theme": "pine" }`; `""` resets              |
+| `POST`   | `/api/v1/auth/password`                  | Change password: `{ "current_password", "new_password" }`; ends other sessions |
+| `GET`    | `/api/v1/auth/sessions`                  | List active sessions, with device and location                                 |
+| `POST`   | `/api/v1/auth/sessions/revoke-others`    | Sign out every other device                                                    |
+| `DELETE` | `/api/v1/auth/sessions/{id}`             | End one session                                                                |
+| `POST`   | `/api/v1/auth/totp/enroll`               | Mint a candidate TOTP secret and its `otpauth://` URI                          |
+| `POST`   | `/api/v1/auth/totp/enable`               | Confirm it: `{ "secret", "code" }`                                             |
+| `POST`   | `/api/v1/auth/totp/disable`              | Turn two-factor off: `{ "code" }`                                              |
+| `GET`    | `/api/v1/auth/passkeys`                  | List the passkeys on the account                                               |
+| `POST`   | `/api/v1/auth/passkeys/register/options` | Start registering: `{ "password" }`                                            |
+| `POST`   | `/api/v1/auth/passkeys/register/verify`  | Finish it: `{ "ceremony_id", "name", "credential" }`                           |
+| `DELETE` | `/api/v1/auth/passkeys/{id}`             | Remove a passkey: `{ "password" }`                                             |
+| `GET`    | `/api/v1/auth/recovery`                  | How many unused recovery codes remain                                          |
+| `POST`   | `/api/v1/auth/recovery`                  | Replace the set; the new codes are returned once                               |
 
 ## Files
 
-| Method   | Path                        | Description                                                                                                          |
-| -------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/api/v1/fs?path=`          | List a directory                                                                                                     |
-| `GET`    | `/api/v1/fs/stat?path=`     | Metadata for one entry                                                                                               |
-| `GET`    | `/api/v1/fs/info?path=`     | Size, dates and owner for one entry                                                                                  |
-| `GET`    | `/api/v1/fs/count?path=`    | Files and folders count directly inside a folder                                                                     |
-| `GET`    | `/api/v1/fs/search?q=`      | Recursive search (only what you may see): `limit`, `path`                                                           |
-| `POST`   | `/api/v1/fs/dirs`           | Create a directory: `{ "path": "/x" }`                                                                              |
-| `POST`   | `/api/v1/fs/move`           | Move or rename                                                                                                       |
-| `POST`   | `/api/v1/fs/copy`           | Copy (a tree or an oversized file runs as a background job)                                                          |
+| Method   | Path                        | Description                                                                                                           |
+| -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/v1/fs?path=`          | List a directory                                                                                                      |
+| `GET`    | `/api/v1/fs/stat?path=`     | Metadata for one entry                                                                                                |
+| `GET`    | `/api/v1/fs/info?path=`     | Size, dates and owner for one entry                                                                                   |
+| `GET`    | `/api/v1/fs/count?path=`    | Files and folders count directly inside a folder                                                                      |
+| `GET`    | `/api/v1/fs/search?q=`      | Recursive search (only what you may see): `limit`, `path`                                                             |
+| `POST`   | `/api/v1/fs/dirs`           | Create a directory: `{ "path": "/x" }`                                                                                |
+| `POST`   | `/api/v1/fs/move`           | Move or rename                                                                                                        |
+| `POST`   | `/api/v1/fs/copy`           | Copy (a tree or an oversized file runs as a background job)                                                           |
 | `POST`   | `/api/v1/fs/extract`        | Extract a ZIP into a new folder (background job): `{ "archive": "/x.zip" }`; not available on object storage          |
 | `POST`   | `/api/v1/fs/fetch`          | Download a URL into a folder (background job): `{ "url": "https://…", "dir": "/" }`; needs `BYTEWING_ALLOW_URL_FETCH` |
-| `DELETE` | `/api/v1/fs?path=`          | Move to trash                                                                                                        |
-| `GET`    | `/api/v1/fs/link?path=`     | Mint a short-lived signed download URL                                                                               |
-| `GET`    | `/api/v1/fs/text?path=`     | Read a text file (capped at 2 MiB by default)                                                                        |
-| `POST`   | `/api/v1/fs/bundle`         | Mint a signed zip link for a selection or folder                                                                     |
-| `GET`    | `/api/v1/fs/thumb?path=`    | Image/video thumbnail: `s` for its pixel size                                                                       |
-| `GET`    | `/api/v1/fs/space`          | Free space and read-only state                                                                                       |
-| `GET`    | `/api/v1/fs/checksum?path=` | SHA-256 of a file (cached, or a job to poll)                                                                         |
-| `PUT`    | `/api/v1/fs/color`          | Set a per-user label colour: `{ "path", "color" }`; `""` clears it                                                  |
-| `PUT`    | `/api/v1/fs/reference`      | Make an entry a per-user reference to another: `{ "path", "target" }`                                               |
-| `DELETE` | `/api/v1/fs/reference`      | Drop the reference at `?path=`                                                                                       |
-| `GET`    | `/api/v1/config`            | Instance capabilities and version                                                                                    |
+| `DELETE` | `/api/v1/fs?path=`          | Move to trash                                                                                                         |
+| `GET`    | `/api/v1/fs/link?path=`     | Mint a short-lived signed download URL                                                                                |
+| `GET`    | `/api/v1/fs/text?path=`     | Read a text file (capped at 2 MiB by default)                                                                         |
+| `POST`   | `/api/v1/fs/bundle`         | Mint a signed zip link for a selection or folder                                                                      |
+| `GET`    | `/api/v1/fs/thumb?path=`    | Image/video thumbnail: `s` for its pixel size                                                                         |
+| `GET`    | `/api/v1/fs/space`          | Free space and read-only state                                                                                        |
+| `GET`    | `/api/v1/fs/checksum?path=` | SHA-256 of a file (cached, or a job to poll)                                                                          |
+| `PUT`    | `/api/v1/fs/color`          | Set a per-user label colour: `{ "path", "color" }`; `""` clears it                                                    |
+| `PUT`    | `/api/v1/fs/reference`      | Make an entry a per-user reference to another: `{ "path", "target" }`                                                 |
+| `DELETE` | `/api/v1/fs/reference`      | Drop the reference at `?path=`                                                                                        |
+| `GET`    | `/api/v1/config`            | Instance capabilities, password rule and version                                                                      |
 
 Labels and references are per-user conveniences: they change nothing about who
 may read a path. A reference must point at a file the caller can read when it is
@@ -121,11 +121,11 @@ created.
 
 ## Sharing
 
-| Method   | Path                  | Description                                        |
-| -------- | --------------------- | -------------------------------------------------- |
-| `GET`    | `/api/v1/shares`      | List your share links                              |
+| Method   | Path                  | Description                                                                                   |
+| -------- | --------------------- | --------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/v1/shares`      | List your share links                                                                         |
 | `POST`   | `/api/v1/shares`      | Create one: `{ "path", "expires_in_hours?", "password?" }`; a password only applies to a file |
-| `DELETE` | `/api/v1/shares/{id}` | Revoke a share link                                |
+| `DELETE` | `/api/v1/shares/{id}` | Revoke a share link                                                                           |
 
 ## Trash
 
@@ -165,27 +165,27 @@ See [API tokens](/reference/api-tokens) for the full flow.
 
 These require an administrator account.
 
-| Method         | Path                                            | Description                           |
-| -------------- | ----------------------------------------------- | ------------------------------------- |
-| `GET`          | `/api/v1/users`                                 | List accounts                         |
-| `PATCH`        | `/api/v1/users/{id}`                            | Promote, disable or update an account |
-| `DELETE`       | `/api/v1/users/{id}`                            | Remove an account                     |
-| `GET`          | `/api/v1/invitations` · `POST` · `DELETE /{id}` | Manage invitations                    |
-| `GET`          | `/api/v1/audit`                                 | Read the audit log (keyset paginated) |
-| `GET`          | `/api/v1/groups` · `POST` · `DELETE /{id}`      | Manage groups                         |
-| `GET`          | `/api/v1/groups/{id}/members`                   | List a group's members                |
-| `PUT`/`DELETE` | `/api/v1/groups/{id}/members/{userID}`          | Group membership                      |
-| `GET`          | `/api/v1/settings/retention`                    | Retention policy in days              |
+| Method         | Path                                            | Description                              |
+| -------------- | ----------------------------------------------- | ---------------------------------------- |
+| `GET`          | `/api/v1/users`                                 | List accounts                            |
+| `PATCH`        | `/api/v1/users/{id}`                            | Promote, disable or update an account    |
+| `DELETE`       | `/api/v1/users/{id}`                            | Remove an account                        |
+| `GET`          | `/api/v1/invitations` · `POST` · `DELETE /{id}` | Manage invitations                       |
+| `GET`          | `/api/v1/audit`                                 | Read the audit log (keyset paginated)    |
+| `GET`          | `/api/v1/groups` · `POST` · `DELETE /{id}`      | Manage groups                            |
+| `GET`          | `/api/v1/groups/{id}/members`                   | List a group's members                   |
+| `PUT`/`DELETE` | `/api/v1/groups/{id}/members/{userID}`          | Group membership                         |
+| `GET`          | `/api/v1/settings/retention`                    | Retention policy in days                 |
 | `PUT`          | `/api/v1/settings/retention`                    | Set it: `{ "audit_days", "trash_days" }` |
 
 ## Permissions
 
-| Method   | Path                        | Description                     |
-| -------- | --------------------------- | ------------------------------- |
-| `GET`    | `/api/v1/permissions?path=` | Effective permissions at a path |
-| `GET`    | `/api/v1/access?path=`      | Access rules at a path          |
-| `POST`   | `/api/v1/access`            | Grant access to a user or group |
-| `DELETE` | `/api/v1/access/{id}`       | Revoke an access rule           |
+| Method   | Path                        | Description                                    |
+| -------- | --------------------------- | ---------------------------------------------- |
+| `GET`    | `/api/v1/permissions?path=` | Effective permissions at a path                |
+| `GET`    | `/api/v1/access?path=`      | Access rules at a path                         |
+| `POST`   | `/api/v1/access`            | Grant access to a user or group                |
+| `DELETE` | `/api/v1/access/{id}`       | Revoke an access rule                          |
 | `GET`    | `/api/v1/shared-with-me`    | Folders granted to you, for a member's sidebar |
 
 ## Uploads
@@ -199,15 +199,15 @@ through `PATCH`; in `direct` mode (object storage) the browser uploads parts
 straight to the bucket, so `PATCH` is refused and the client fetches presigned
 part URLs instead.
 
-| Method   | Path                             | Description                                      |
-| -------- | -------------------------------- | ------------------------------------------------ |
-| `OPTIONS`| `/api/v1/uploads`                | Advertise tus capabilities                       |
-| `POST`   | `/api/v1/uploads`                | Open a session                                   |
-| `HEAD`   | `/api/v1/uploads/{token}`        | Current offset                                   |
-| `PATCH`  | `/api/v1/uploads/{token}`        | Send the next chunk (`tus` mode)                 |
-| `POST`   | `/api/v1/uploads/{token}/parts`  | Mint presigned URLs for numbered parts (`direct`) |
-| `POST`   | `/api/v1/uploads/{token}/complete` | Finish a `direct` upload, optionally with the browser's checksum claim |
-| `DELETE` | `/api/v1/uploads/{token}`        | Abort an upload                                  |
+| Method    | Path                               | Description                                                            |
+| --------- | ---------------------------------- | ---------------------------------------------------------------------- |
+| `OPTIONS` | `/api/v1/uploads`                  | Advertise tus capabilities                                             |
+| `POST`    | `/api/v1/uploads`                  | Open a session                                                         |
+| `HEAD`    | `/api/v1/uploads/{token}`          | Current offset                                                         |
+| `PATCH`   | `/api/v1/uploads/{token}`          | Send the next chunk (`tus` mode)                                       |
+| `POST`    | `/api/v1/uploads/{token}/parts`    | Mint presigned URLs for numbered parts (`direct`)                      |
+| `POST`    | `/api/v1/uploads/{token}/complete` | Finish a `direct` upload, optionally with the browser's checksum claim |
+| `DELETE`  | `/api/v1/uploads/{token}`          | Abort an upload                                                        |
 
 ## Content origin
 
@@ -218,11 +218,11 @@ fly has no length to declare and cannot be ranged into. The trailing filename is
 decoration: only the token is authoritative. On object storage, a file download
 is a redirect to a presigned bucket URL rather than a stream.
 
-| Method             | Path                    | Description                                              |
-| ------------------ | ----------------------- | -------------------------------------------------------- |
-| `GET`/`HEAD`       | `/d/{token}/{name}`     | Signed download                                          |
-| `GET`/`HEAD`       | `/z/{token}/{name}`     | Streamed zip of a selection or folder                    |
-| `GET`/`HEAD`       | `/s/{token}`            | Public share link; a folder share takes `?p=` for a subpath |
-| `POST`             | `/s/{token}`            | Submit the password of a protected share                 |
+| Method       | Path                | Description                                                 |
+| ------------ | ------------------- | ----------------------------------------------------------- |
+| `GET`/`HEAD` | `/d/{token}/{name}` | Signed download                                             |
+| `GET`/`HEAD` | `/z/{token}/{name}` | Streamed zip of a selection or folder                       |
+| `GET`/`HEAD` | `/s/{token}`        | Public share link; a folder share takes `?p=` for a subpath |
+| `POST`       | `/s/{token}`        | Submit the password of a protected share                    |
 
 Older share links in the form `/s/{token}/{name}` still resolve.

@@ -119,10 +119,10 @@ func TestValidatePassword(t *testing.T) {
 	rejected := []struct{ name, password, username string }{
 		{"empty", "", "krishna"},
 		{"too short", "short", "krishna"},
-		{"one below the floor", "abcdefghijk", "krishna"}, // 11 runes
+		{"one below the default", "abcdefghi", "krishna"}, // 9 runes
 		{"too long", strings.Repeat("a", MaxPasswordLength+1), "krishna"},
 		{"only spaces", strings.Repeat(" ", MinPasswordLength+4), "krishna"},
-		// Length alone is satisfied by twelve of the same character, which is
+		// Length alone is satisfied by ten of the same character, which is
 		// not what the rule exists for.
 		{"one repeated character", strings.Repeat("a", MinPasswordLength+2), "krishna"},
 		{"two characters alternating", strings.Repeat("ab", MinPasswordLength), "krishna"},
@@ -145,12 +145,46 @@ func TestValidatePassword(t *testing.T) {
 	}
 }
 
-// TestMinimumLengthIsDeliberate guards the shipped floor. Lowering it to make a
-// test convenient should have to change this too.
-func TestMinimumLengthIsDeliberate(t *testing.T) {
+// TestValidatePasswordHonoursConfiguredMinimum checks that the service
+// enforces the length it was configured with.
+func TestValidatePasswordHonoursConfiguredMinimum(t *testing.T) {
 	t.Parallel()
 
-	if MinPasswordLength < 12 {
-		t.Errorf("MinPasswordLength = %d, below the intended floor of 12", MinPasswordLength)
+	// Three distinct runes: allowed at the configured floor, too short for
+	// the default.
+	if err := validatePassword("abc", "krishna", MinPasswordLengthFloor); err != nil {
+		t.Fatalf("validatePassword at the floor: %v", err)
+	}
+	if err := validatePassword("abcd", "krishna", MinPasswordLength); err == nil {
+		t.Fatal("a password below the configured minimum was accepted")
+	}
+
+	// The variety rule still applies at the floor.
+	if err := validatePassword("aaa", "krishna", MinPasswordLengthFloor); err == nil {
+		t.Fatal("a repeated character at the floor was accepted")
+	}
+}
+
+// TestMinimumLengthDefaults guards the shipped default and floor. Changing
+// them should have to change this too.
+func TestMinimumLengthDefaults(t *testing.T) {
+	t.Parallel()
+
+	if MinPasswordLength != 10 {
+		t.Errorf("MinPasswordLength = %d, want the documented default of 10", MinPasswordLength)
+	}
+	if MinPasswordLengthFloor != 3 {
+		t.Errorf("MinPasswordLengthFloor = %d, want 3", MinPasswordLengthFloor)
+	}
+}
+
+// TestServiceRaisesMinimumToFloor checks that an option below the floor cannot
+// make passwords shorter than the documented minimum.
+func TestServiceRaisesMinimumToFloor(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t, WithMinPasswordLength(1))
+	if f.svc.minPasswordLength != MinPasswordLengthFloor {
+		t.Errorf("minPasswordLength = %d, want the floor %d", f.svc.minPasswordLength, MinPasswordLengthFloor)
 	}
 }

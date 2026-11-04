@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ func setBaseEnv(t *testing.T) {
 	t.Setenv(EnvReserve, "")
 	t.Setenv(EnvReadOnly, "")
 	t.Setenv(EnvStorageBackend, "")
+	t.Setenv(EnvMinPasswordLength, "")
 	t.Setenv(EnvS3Endpoint, "")
 	t.Setenv(EnvS3Region, "")
 	t.Setenv(EnvS3Bucket, "")
@@ -142,6 +144,38 @@ func TestAllowURLFetch(t *testing.T) {
 	t.Setenv(EnvAllowURLFetch, "perhaps")
 	if _, err := Load(); err == nil || !strings.Contains(err.Error(), EnvAllowURLFetch) {
 		t.Errorf("Load with %s=perhaps = %v, want an %s error", EnvAllowURLFetch, err, EnvAllowURLFetch)
+	}
+}
+
+func TestMinPasswordLength(t *testing.T) {
+	setBaseEnv(t)
+	t.Setenv(EnvDataDir, t.TempDir())
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.MinPasswordLength != DefaultMinPasswordLength {
+		t.Errorf("MinPasswordLength = %d, want default %d", cfg.MinPasswordLength, DefaultMinPasswordLength)
+	}
+
+	// The floor is accepted; there is no upper bound.
+	for _, want := range []int{MinPasswordLengthFloor, 12, 128} {
+		t.Setenv(EnvMinPasswordLength, strconv.Itoa(want))
+		cfg, err = Load()
+		if err != nil {
+			t.Fatalf("Load with %s=%d: %v", EnvMinPasswordLength, want, err)
+		}
+		if cfg.MinPasswordLength != want {
+			t.Errorf("%s=%d: MinPasswordLength = %d", EnvMinPasswordLength, want, cfg.MinPasswordLength)
+		}
+	}
+
+	for _, raw := range []string{"2", "0", "-1", "ten", "10.5"} {
+		t.Setenv(EnvMinPasswordLength, raw)
+		if _, err := Load(); err == nil || !strings.Contains(err.Error(), EnvMinPasswordLength) {
+			t.Errorf("Load with %s=%q = %v, want an %s error", EnvMinPasswordLength, raw, err, EnvMinPasswordLength)
+		}
 	}
 }
 
