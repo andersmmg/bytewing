@@ -555,14 +555,11 @@ func (s *Service) Authenticate(ctx context.Context, username, password, address 
 	if address != "" && !s.byAddress.Allow(address) {
 		return User{}, ErrRateLimited
 	}
+
+	username = NormaliseUsername(username)
 	if !s.byAccount.Allow(username) {
 		return User{}, ErrRateLimited
 	}
-
-	// Matched against the normalised form the account was stored under, so
-	// capitalisation is not the difference between signing in and being told
-	// the credentials are wrong.
-	username = NormaliseUsername(username)
 
 	row, err := s.reads.GetUserByUsername(ctx, username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {

@@ -77,11 +77,12 @@ func (s *Service) ResetPasswordWithCode(ctx context.Context, username, code, new
 	if address != "" && !s.byAddress.Allow(address) {
 		return ErrRateLimited
 	}
+
+	username = NormaliseUsername(username)
 	if !s.byAccount.Allow(username) {
 		return ErrRateLimited
 	}
 
-	username = NormaliseUsername(username)
 	if err := ValidatePassword(newPassword, username); err != nil {
 		return err
 	}
