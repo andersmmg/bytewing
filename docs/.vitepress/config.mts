@@ -41,6 +41,7 @@ export default defineConfig({
             { text: 'Introduction', link: '/guide/introduction' },
             { text: 'Installation', link: '/guide/installation' },
             { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Object storage', link: '/guide/object-storage' },
             { text: 'Deployment', link: '/guide/deployment' },
             { text: 'Upgrading', link: '/guide/upgrading' },
           ],

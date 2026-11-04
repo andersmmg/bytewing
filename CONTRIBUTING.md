@@ -13,7 +13,7 @@ The interface lives in `web/`; run `pnpm dev` there against a local backend.
 
 ## Pull requests
 
-Work however you like on your branch — commit as often and as messily as you
+Work however you like on your branch: commit as often and as messily as you
 want. What matters is the **pull request title**, because we **squash-merge** and
 that title becomes the single commit on `main`.
 
@@ -44,6 +44,6 @@ You do not release anything by hand, and you never edit version numbers.
 2. A maintainer merges that release PR when it is time to cut a version. That
    creates the `vX.Y.Z` tag and the GitHub release.
 
-`version.txt` is the single source of truth for the version — the binary,
+`version.txt` is the single source of truth for the version: the binary,
 the Docker image and the interface all read from it. Do not edit it yourself;
 release-please owns it.

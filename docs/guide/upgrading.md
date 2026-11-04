@@ -16,7 +16,7 @@ docker compose up -d
 If you pinned a version tag, bump it first:
 
 ```yaml
-image: ghcr.io/andersmmg/bytewing:v0.8.0
+image: ghcr.io/andersmmg/bytewing:0.11.0
 ```
 
 ## Database migrations
@@ -27,14 +27,15 @@ leave a half-migrated database.
 
 ::: warning Back up first
 Migrations are one-way. Before a major upgrade, make sure you have a copy of the
-config volume — see [Backups](/guide/deployment#backups).
+config volume; see [Backups](/guide/deployment#backups).
 :::
 
 ## Checking the running version
 
 The version is shown in the sidebar of the interface, and returned by the
-public config endpoint:
+config endpoint (which requires a session or API token):
 
 ```sh
-curl https://bytewing.example.tld/api/v1/config
+curl -H "Authorization: Bearer $TOKEN" \
+  https://bytewing.example.tld/api/v1/config
 ```
