@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/andersmmg/bytewing/compare/v0.11.0...v0.11.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* normalize usernames earlier for security ([#4](https://github.com/andersmmg/bytewing/issues/4)) ([fdbd80d](https://github.com/andersmmg/bytewing/commit/fdbd80dc2100924e9ebf0915d1eb72b04a31fe15))
+
 ## [0.11.0](https://github.com/andersmmg/bytewing/compare/v0.10.0...v0.11.0) (2026-11-03)
 
 
