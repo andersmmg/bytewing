@@ -19,9 +19,7 @@ export default defineConfig({
     ['link', { rel: 'apple-touch-icon', href: '/bytewing/apple-touch-icon.png' }],
   ],
 
-  // The design documents are internal HTML artifacts kept in docs/design/. They
-  // are not part of the built site; VitePress only routes Markdown.
-  srcExclude: ['design/**', '**/README.md'],
+  srcExclude: ['**/README.md'],
 
   themeConfig: {
     logo: '/logo.png',

@@ -1,10 +1,8 @@
 /*
  * ByteWing documentation theme.
  *
- * Maps the palette and typography of the design documents (docs/design/*.html)
- * onto VitePress's CSS variables: warm paper ground, deep-green accent,
- * Fredoka display face for headings and the wordmark. Light and dark are the
- * same two schemes the design documents use.
+ * Maps the palette and typography for the default theme to the ByteWing
+ * brand.
  */
 
 /* The wordmark face, served at public/fonts. */
@@ -141,7 +139,7 @@
   background: url('/bytewing/logo.png') top / contain no-repeat;
 }
 
-/* A hairline under section headings, echoing the design documents' rules. */
+/* A hairline under section headings */
 .vp-doc h2 {
   border-top: 1px solid var(--vp-c-divider);
   padding-top: 24px;

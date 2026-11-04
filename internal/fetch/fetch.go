@@ -1,5 +1,5 @@
 // Package fetch downloads a user-supplied URL from the server's own network,
-// with the server-side request forgery defences §9.2 of the design requires.
+// with server-side request forgery defences.
 //
 // The central risk is that a URL lets a caller aim the server at its own
 // network — internal services, sibling containers, and above all the cloud

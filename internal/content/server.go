@@ -52,11 +52,6 @@ type Options struct {
 	Shares  share.Resolver
 
 	// SingleOrigin reports that no separate content host is configured.
-	//
-	// It turns on the degradation described in the design document: everything
-	// is sent as an attachment inside a sandbox, so a file that would otherwise
-	// render — an HTML page, an SVG — cannot execute in the origin that holds
-	// the session.
 	SingleOrigin bool
 
 	ObjectStorage bool

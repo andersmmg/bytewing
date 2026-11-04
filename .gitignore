@@ -2,7 +2,7 @@
 /bin/
 /dist/
 
-# Frontend build output is never versioned — see docs/design/conception.html §12.4.
+# Frontend build output is never versioned.
 # Committing it makes contributions unreviewable and conflicts constant.
 /internal/web/dist/*
 !/internal/web/dist/.gitkeep
