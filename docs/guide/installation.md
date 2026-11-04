@@ -50,7 +50,7 @@ docker compose logs bytewing
 
 ::: tip Pin a version
 `:latest` follows every release. For a reproducible deployment, pin a tag such
-as `ghcr.io/andersmmg/bytewing:v0.10.0`.
+as `ghcr.io/andersmmg/bytewing:0.11.0`.
 :::
 
 ## First run

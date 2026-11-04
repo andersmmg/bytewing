@@ -1,9 +1,12 @@
 # Permissions
 
 Access is granted **per path**, to a user or a group, as a set of rights:
-**read**, **write**, **delete**, **share** and **manage**. The check runs in the
-storage layer on every operation, not in an HTTP handler, so a forgotten
-endpoint cannot open a hole.
+**read**, **write**, **delete**, **share** and **manage**. Read, write and
+delete are checked in the storage layer on every filesystem operation, not in
+an HTTP handler, so a forgotten endpoint cannot open a hole. **Share** and
+**manage** are capabilities rather than filesystem operations, so the storage
+guard does not check them: `Engine.Allows` performs the share check before a
+link is created, and only administrators change rules.
 
 ## How a decision is made
 
@@ -13,9 +16,10 @@ their groups), and the deepest rule that mentions that bit decides it. A denial
 wins a tie at the same depth, so two rules that disagree about a path never
 silently grant access.
 
-This is what lets a rule granting read at `/projects` and one denying write at
-`/projects/archive` coexist: the subject can read everything, and write
-everywhere except that subtree, without either rule restating the other.
+This is what lets a rule granting read and write at `/projects` and one denying
+write at `/projects/archive` coexist: the subject can read and write throughout
+`/projects`, and the subtree stays read-only, without either rule restating the
+other.
 
 **Ownership** is layered on top: the owner of a file implicitly holds read,
 write, delete and share on it, but not manage; uploading a file is no reason to
@@ -42,6 +46,6 @@ it, and a denial at that depth wins.
 
 ## Two rules that hold everywhere
 
-- **The check lives in the storage layer**, not in HTTP handlers.
+- **The storage layer checks filesystem access**, not HTTP handlers.
 - **No escalation by sharing**: you cannot share more than you hold. A
   read-only user cannot create a writable link.

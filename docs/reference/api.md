@@ -212,7 +212,9 @@ part URLs instead.
 ## Content origin
 
 These are served from the content host (or the app host in single-origin mode),
-without a session cookie, with full `Range` support. The trailing filename is
+without a session cookie. File downloads (`/d/{token}/{name}`) support `Range`;
+the streamed zip (`/z/{token}/{name}`) does not, because an archive built on the
+fly has no length to declare and cannot be ranged into. The trailing filename is
 decoration: only the token is authoritative. On object storage, a file download
 is a redirect to a presigned bucket URL rather than a stream.
 

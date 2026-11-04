@@ -5,6 +5,7 @@ performed it, so an administrator can answer what happened and when.
 
 ## What is recorded
 
+- The first-run setup that creates the administrator account
 - Sign-ins that succeed, by password or passkey, and sign-outs
 - Password changes, two-factor being turned on or off, and passkey
   registration or removal

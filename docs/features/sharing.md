@@ -18,13 +18,16 @@ is not there yet. You cannot share more than you hold:
 
 ## Download managers
 
-Share links work with download managers: no JavaScript, no cookies, correct
-`Range` support, and parallel connections. Serving them from a separate origin
-means a shared file can never reach a session.
+Unprotected file shares work with download managers: no JavaScript, no cookies,
+correct `Range` support, and parallel connections. Serving them from a separate
+origin means a shared file can never reach a session. A password-protected link
+is the exception: it opens a form you have to submit in a browser, so a download
+manager cannot use one.
 
-Each non-`HEAD` request is counted as a download, so a download manager that
-opens many range connections will show a higher count than one logical
-download.
+Each non-`HEAD` request for a shared file is counted as a download, so a
+download manager that opens many range connections will show a higher count than
+one logical download. Requests that never reach a file are not counted: the
+password page, a folder listing, and a ZIP bundle download.
 
 ## Revoking
 

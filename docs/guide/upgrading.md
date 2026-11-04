@@ -16,7 +16,7 @@ docker compose up -d
 If you pinned a version tag, bump it first:
 
 ```yaml
-image: ghcr.io/andersmmg/bytewing:v0.10.0
+image: ghcr.io/andersmmg/bytewing:0.11.0
 ```
 
 ## Database migrations

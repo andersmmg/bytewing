@@ -5,9 +5,14 @@ only what you are allowed to see.
 
 ## How it works
 
-There is no index to go stale. Each search walks the live tree from where you
-start it, so a file dropped in over SSH is findable immediately, and a result
-can never describe something the disk no longer has.
+On local storage there is no index to go stale. Each search walks the tree from
+where you start it, so a file dropped in over SSH is findable immediately, and a
+result can never describe a file the disk no longer has.
+
+On object storage a listing may be answered from the metadata cache instead, so
+an object added or removed outside ByteWing appears only once that cache
+expires, after `BYTEWING_S3_META_TTL` (one minute by default). Changes made
+through ByteWing are reflected immediately.
 
 Every entry the walk meets passes through the same per-path authorisation as a
 listing, so a match in a folder you were granted is returned without exposing
@@ -23,8 +28,8 @@ the query is typed that way; a decomposed form with separate combining marks
 will not match, so type the character rather than pasting a decomposed
 version.
 
-The walk is breadth-first, which means matches nearer your starting folder come
-first rather than after an alphabetical sweep of the whole tree.
+The walk goes breadth-first from the starting folder, and matches are sorted
+before they are returned, so the response order differs from the walk order.
 
 ## Limits
 

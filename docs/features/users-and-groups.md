@@ -1,7 +1,8 @@
 # Users & groups
 
-ByteWing is multi-user. Accounts are created by invitation, and access is granted
-to a user or to a whole group.
+ByteWing is multi-user. The first administrator is created through the one-time
+setup link printed on first start; every later account comes from an
+invitation. Access is granted to a user or to a whole group.
 
 ## Inviting users
 
