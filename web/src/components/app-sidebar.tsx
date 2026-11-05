@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   CaretUpDownIcon,
   ClockCounterClockwiseIcon,
@@ -49,7 +50,7 @@ type Props = {
  * Sidebar is the app's fixed left column: identity, the "New" action,
  * navigation, and the storage gauge that tells you when to stop uploading.
  */
-export function Sidebar({ user, space, section, create, canCreate, version, onHome, onTrash, onShared, onSharedWithMe, onMembers, onActivity, onSettings, onSignOut }: Props) {
+export const Sidebar = memo(function Sidebar({ user, space, section, create, canCreate, version, onHome, onTrash, onShared, onSharedWithMe, onMembers, onActivity, onSettings, onSignOut }: Props) {
   const inFiles = section === 'files'
   // Admins are shown the whole instance
   const gauge = storageGauge(space, user.is_admin)
@@ -211,4 +212,4 @@ export function Sidebar({ user, space, section, create, canCreate, version, onHo
     </aside>
     </IconContext.Provider>
   )
-}
+})

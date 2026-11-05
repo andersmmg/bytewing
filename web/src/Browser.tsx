@@ -35,6 +35,7 @@ import {
 } from "@phosphor-icons/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -43,6 +44,7 @@ import {
   type DragEvent,
   type MouseEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { toast } from "sonner";
 
@@ -106,7 +108,6 @@ import {
   FADE_MS,
   INTERACTIVE_SELECTOR,
   useBoxSelect,
-  type BoxRect,
 } from "@/lib/box-select";
 import {
   colorHex,
@@ -132,6 +133,11 @@ import {
   formatRelativeTime,
   shortName,
 } from "@/lib/files";
+import {
+  clearTransfers,
+  updateTransfers,
+  useTransfers,
+} from "@/lib/transfers";
 import { Empty } from "./App";
 import {
   api,
@@ -275,38 +281,34 @@ type EntryActions = {
   extract: (entry: Entry) => void;
   share: (entry: Entry) => void;
   manageAccess: (entry: Entry) => void;
-  canManageAccess: boolean;
   copy: (entry: Entry) => void;
   cut: (entry: Entry) => void;
   paste: () => void;
   pasteRef: () => void;
   rename: (entry: Entry) => void;
-  renaming: string | null;
   commitRename: (entry: Entry, name: string) => void;
   cancelRename: () => void;
   remove: (entry: Entry) => void;
   contextTarget: (entry: Entry) => void;
   setColor: (entry: Entry, color: ColorId | null) => void;
-  isSelected: (entry: Entry) => boolean;
-  isCut: (entry: Entry) => boolean;
-  childCount: (path: string) => ChildCount | null | undefined;
-  selectBox: (paths: string[]) => void;
-  selectedPaths: () => string[];
-  isShared: (entry: Entry) => boolean;
-  canPaste: boolean;
-  canPasteRef: boolean;
-  // Permissions in the current folder, applied to its entries so the menus offer
-  // only what the caller can actually do.
-  perms: PermSet;
   // Drag-to-move: dragPaths is what a drag starting on an entry carries (the
   // selection, or just that entry); moveInto drops those paths into a folder.
   dragPaths: (entry: Entry) => string[];
-  // tileSize is the grid's current icon size, so a multi-item drag preview is
-  // built at the same size as the tiles on screen.
-  tileSize: GridSize;
   moveInto: (dirPath: string, dirName: string, paths: string[]) => void;
   dropTarget: string | null;
   setDropTarget: (path: string | null) => void;
+};
+
+type RowContext = {
+  actions: RefObject<EntryActions>;
+  perms: PermSet;
+  showLocation: boolean;
+  canPaste: boolean;
+  canPasteRef: boolean;
+  canManageAccess: boolean;
+  tileSize: GridSize;
+  renamingPath: string | null;
+  focusEntry: (path: string | null) => void;
 };
 
 const AUTO_REFRESH_MS = 30_000;
@@ -394,7 +396,6 @@ export function Browser({
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [transfers, setTransfers] = useState<UploadProgress[]>([]);
   const [dragging, setDragging] = useState(false);
   const [space, setSpace] = useState<Space | null>(null);
   const [query, setQuery] = useState("");
@@ -449,6 +450,8 @@ export function Browser({
   const lastRefreshAt = useRef(Date.now());
   const revealRef = useRef<{ dir: string; path: string } | null>(null);
 
+  useEffect(() => () => clearTransfers(), []);
+
   useEffect(() => {
     localStorage.setItem(
       SETTINGS_KEY,
@@ -474,15 +477,24 @@ export function Browser({
     if (el instanceof HTMLElement && el.closest("[data-entry-path]")) el.blur();
   }, [focusPath]);
 
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+
   const selectBox = useCallback((paths: string[]) => {
+    const cur = selectionRef.current;
+    if (cur.size === paths.length && paths.every((path) => cur.has(path)))
+      return;
     setSelection(new Set(paths));
     setAnchor(paths.length > 0 ? paths[paths.length - 1]! : null);
   }, []);
+
+  const boxRect = useRef<HTMLDivElement>(null);
 
   // box select covers the whole browse area, breadcrumb bar included
   const box = useBoxSelect({
     snapshot: () => [...selection],
     apply: selectBox,
+    overlay: boxRect,
   });
 
   // load fetches a folder's listing. A silent load refreshes the entries in
@@ -691,7 +703,7 @@ export function Browser({
 
       // Show the whole batch at once, as a queue, so someone sees every file
       // they meant to send rather than only the one in flight.
-      setTransfers((current) => [
+      updateTransfers((current) => [
         ...current,
         ...queued.map(({ id, name, file }) => ({
           id,
@@ -718,7 +730,7 @@ export function Browser({
       // keyed by id, and the refresh is time-coalesced, so order is irrelevant.
       const uploads = queued.map(({ id, file, name, signal }) => async () => {
         const update = (patch: Partial<UploadProgress>) =>
-          setTransfers((current) =>
+          updateTransfers((current) =>
             current.map((t) => (t.id === id ? { ...t, ...patch } : t)),
           );
 
@@ -792,7 +804,7 @@ export function Browser({
   // the runUpload loop sees the aborted signal and skips them without any
   // network traffic. In-flight rows flip when their abort lands a moment later.
   const markQueuedCancelled = useCallback((ids: Set<string> | null) => {
-    setTransfers((current) =>
+    updateTransfers((current) =>
       current.map((t) =>
         t.status === "queued" && (!ids || ids.has(t.id))
           ? { ...t, status: "cancelled" as const, speed: 0 }
@@ -857,13 +869,29 @@ export function Browser({
     [uploadTree],
   );
 
-  const createActions: CreateActions = {
-    newFolder: () => setDialog({ kind: "new-folder" }),
-    importFiles: () => fileInput.current?.click(),
-    importFolder: () => dirInput.current?.click(),
-    fetchUrl: () => setDialog({ kind: "fetch-url" }),
-    canFetchUrl: urlFetch,
-  };
+  const createActions = useMemo<CreateActions>(
+    () => ({
+      newFolder: () => setDialog({ kind: "new-folder" }),
+      importFiles: () => fileInput.current?.click(),
+      importFolder: () => dirInput.current?.click(),
+      fetchUrl: () => setDialog({ kind: "fetch-url" }),
+      canFetchUrl: urlFetch,
+    }),
+    [urlFetch],
+  );
+
+  // Stable so the sidebar can skip re-renders it did not ask for.
+  const goHome = useCallback(() => {
+    setScreen("files");
+    setPath(homePath);
+    setQuery("");
+  }, [homePath]);
+  const goTrash = useCallback(() => setScreen("trash"), []);
+  const goShared = useCallback(() => setScreen("shared"), []);
+  const goSharedWithMe = useCallback(() => setScreen("shared-with-me"), []);
+  const goMembers = useCallback(() => setScreen("members"), []);
+  const goActivity = useCallback(() => setScreen("activity"), []);
+  const goSettings = useCallback(() => setScreen("settings"), []);
 
   // In search mode the listing is the server's results (which span folders);
   // otherwise it is the current folder's entries.
@@ -1126,8 +1154,6 @@ export function Browser({
     share: (entry) => setDialog({ kind: "share", entry }),
     manageAccess: (entry) => setDialog({ kind: "access", entry }),
     info: (entry) => setDialog({ kind: "info", entry }),
-    childCount: (path) => counts[path],
-    canManageAccess: user.is_admin,
     copy: (entry) =>
       setClipboard({ mode: "copy", entries: clipboardTargets(entry) }),
     cut: (entry) =>
@@ -1135,7 +1161,6 @@ export function Browser({
     paste: () => void doPaste(),
     pasteRef: () => void doPasteRef(),
     rename: (entry) => setRenaming(entry.path),
-    renaming,
     commitRename,
     cancelRename,
     remove: (entry) => setDialog({ kind: "delete", entries: [entry] }),
@@ -1168,29 +1193,17 @@ export function Browser({
           );
         });
     },
-    isSelected: (entry) => selection.has(entry.path),
-    isCut: (entry) =>
-      clipboard?.mode === "cut" &&
-      clipboard.entries.some((e) => e.path === entry.path),
-    selectBox,
-    selectedPaths: () => [...selection],
-    isShared: (entry) => sharedPaths.has(entry.path),
-    canPaste: clipboard !== null && path !== "/members",
-    canPasteRef:
-      clipboard !== null &&
-      clipboard.mode === "copy" &&
-      clipboard.entries.length === 1 &&
-      path !== "/members",
-    perms,
     dragPaths: (entry) =>
       selection.has(entry.path) && selected.length > 0
         ? selected.map((e) => e.path)
         : [entry.path],
-    tileSize: GRID_SIZES[gridSize]!,
     moveInto,
     dropTarget,
     setDropTarget,
   };
+
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
 
   // What copy/cut act on: the whole selection when the target is part of it,
   // otherwise just the one entry the menu was opened on.
@@ -1460,8 +1473,9 @@ export function Browser({
         api
           .getJob(tracked.id)
           .then((fresh) => {
-            setJobs((cur) =>
-              cur.map((j) => {
+            setJobs((cur) => {
+              let changed = false;
+              const next = cur.map((j) => {
                 if (j.id !== tracked.id) return j;
                 // Transfer rate from the change since the last sample. Only
                 // update the rate when bytes actually advanced, so a stalled or
@@ -1470,6 +1484,15 @@ export function Browser({
                 const dt = (now - j.sampledAt) / 1000;
                 const advanced = fresh.bytes_done - j.bytesDone;
                 const speed = dt > 0 && advanced > 0 ? advanced / dt : j.speed;
+                if (
+                  j.status === fresh.status &&
+                  j.progress === fresh.progress &&
+                  j.bytesDone === fresh.bytes_done &&
+                  j.bytesTotal === fresh.bytes_total &&
+                  speed === j.speed
+                )
+                  return j;
+                changed = true;
                 return {
                   ...j,
                   status: fresh.status,
@@ -1479,8 +1502,9 @@ export function Browser({
                   sampledAt: now,
                   speed,
                 };
-              }),
-            );
+              });
+              return changed ? next : cur;
+            });
             if (fresh.status === "done") {
               const done =
                 tracked.kind === "extract"
@@ -1627,10 +1651,10 @@ export function Browser({
     }
   }
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     await api.logout().catch(() => undefined);
     onSignedOut();
-  }
+  }, [onSignedOut]);
 
   function toggleSort(key: SortKey) {
     setSort((current) =>
@@ -1649,6 +1673,39 @@ export function Browser({
     clipboard.mode === "copy" &&
     clipboard.entries.length === 1 &&
     path !== "/members";
+
+  const rowContext = useMemo<RowContext>(
+    () => ({
+      actions: actionsRef,
+      perms,
+      showLocation: inSearch,
+      canPaste: clipboard !== null && path !== "/members",
+      canPasteRef,
+      canManageAccess: user.is_admin,
+      tileSize: GRID_SIZES[gridSize]!,
+      renamingPath: renaming,
+      focusEntry,
+    }),
+    [
+      perms,
+      inSearch,
+      clipboard,
+      path,
+      canPasteRef,
+      user.is_admin,
+      gridSize,
+      renaming,
+      focusEntry,
+    ],
+  );
+
+  const cutPaths = useMemo(
+    () =>
+      new Set(
+        clipboard?.mode === "cut" ? clipboard.entries.map((e) => e.path) : [],
+      ),
+    [clipboard],
+  );
 
   // empty-area create menu depending on whether the caller can write here.
   const browseArea = (
@@ -1692,26 +1749,31 @@ export function Browser({
       ) : view === "grid" ? (
         <GridView
           groups={groups}
-          actions={actions}
-          size={GRID_SIZES[gridSize]!}
-          showLocation={inSearch}
+          ctx={rowContext}
+          selection={selection}
+          sharedPaths={sharedPaths}
+          cutPaths={cutPaths}
+          dropTarget={dropTarget}
+          counts={counts}
           focusPath={focusPath}
           focusSeq={focusSeq}
-          focusEntry={focusEntry}
         />
       ) : (
         <ListView
           rows={listRows}
           sort={sort}
           onSort={toggleSort}
-          actions={actions}
-          showLocation={inSearch}
+          ctx={rowContext}
+          selection={selection}
+          sharedPaths={sharedPaths}
+          cutPaths={cutPaths}
+          dropTarget={dropTarget}
+          counts={counts}
           focusPath={focusPath}
           focusSeq={focusSeq}
-          focusEntry={focusEntry}
         />
       )}
-      {box.rect && <BoxOverlay rect={box.rect} fading={box.fading} />}
+      <BoxOverlay overlayRef={boxRect} />
     </div>
   );
 
@@ -1723,17 +1785,13 @@ export function Browser({
         section={screen}
         create={createActions}
         canCreate={canCreateHere}
-        onHome={() => {
-          setScreen("files");
-          setPath(homePath);
-          setQuery("");
-        }}
-        onTrash={() => setScreen("trash")}
-        onShared={() => setScreen("shared")}
-        onSharedWithMe={() => setScreen("shared-with-me")}
-        onMembers={() => setScreen("members")}
-        onActivity={() => setScreen("activity")}
-        onSettings={() => setScreen("settings")}
+        onHome={goHome}
+        onTrash={goTrash}
+        onShared={goShared}
+        onSharedWithMe={goSharedWithMe}
+        onMembers={goMembers}
+        onActivity={goActivity}
+        onSettings={goSettings}
         onSignOut={signOut}
         version={version}
       />
@@ -2020,8 +2078,7 @@ export function Browser({
 
           <div className="fixed bottom-4 right-4 z-20 flex flex-col items-end gap-3">
             <Transfers
-              transfers={transfers}
-              onClear={() => setTransfers([])}
+              onClear={clearTransfers}
               onCancel={cancelTransfers}
               onCancelTransfer={cancelTransfer}
             />
@@ -2236,18 +2293,17 @@ function clearUnlessEntry(e: MouseEvent, onClearSelection: () => void) {
   onClearSelection();
 }
 
-function BoxOverlay({ rect, fading }: { rect: BoxRect; fading: boolean }) {
+function BoxOverlay({
+  overlayRef,
+}: {
+  overlayRef: RefObject<HTMLDivElement | null>;
+}) {
   return (
     <div
-      className="pointer-events-none fixed z-20 rounded-lg border border-primary bg-primary/15"
-      style={{
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height,
-        opacity: fading ? 0 : 1,
-        transition: `opacity ${FADE_MS}ms`,
-      }}
+      ref={overlayRef}
+      aria-hidden
+      className="pointer-events-none fixed left-0 top-0 z-20 rounded-lg border border-primary bg-primary/15 opacity-0"
+      style={{ transition: `opacity ${FADE_MS}ms` }}
     />
   );
 }
@@ -2256,31 +2312,31 @@ function BoxOverlay({ rect, fading }: { rect: BoxRect; fading: boolean }) {
  * moveDragProps builds the drag-and-drop handlers a row or tile needs to move
  * files in-app: any entry can be picked up, and a folder accepts a drop. The
  * MOVE_MIME payload marks the drag as an internal move so it never triggers the
- * upload overlay, and `isTarget` says whether this folder is the one hovered.
- * `variant` picks the multi-item preview's shape: a grid tile, or the list
- * row's horizontal bar.
+ * upload overlay. `variant` picks the multi-item preview's shape: a grid tile,
+ * or the list row's horizontal bar.
+ *
+ * The handlers read the latest actions through ctx when they fire.
  */
 function moveDragProps(
   entry: Entry,
-  actions: EntryActions,
+  ctx: RowContext,
+  canDelete: boolean,
+  renaming: boolean,
   variant: "tile" | "row" = "tile",
 ) {
-  const p = entryPerms(entry, actions.perms);
-  const isTarget = entry.is_dir && actions.dropTarget === entry.path;
-  const renaming = actions.renaming === entry.path;
   return {
-    isTarget,
-    draggable: p.delete && !renaming,
+    draggable: canDelete && !renaming,
     onDragStart: (e: DragEvent) => {
-      if (!p.delete) return;
+      if (!canDelete) return;
+      const actions = ctx.actions.current;
       const paths = actions.dragPaths(entry);
       e.dataTransfer.setData(MOVE_MIME, JSON.stringify(paths));
       e.dataTransfer.effectAllowed = "move";
-      installDragGhost(e.dataTransfer, paths.length, actions.tileSize, variant);
+      installDragGhost(e.dataTransfer, paths.length, ctx.tileSize, variant);
     },
     onDragEnd: () => {
       clearDragGhost();
-      actions.setDropTarget(null);
+      ctx.actions.current.setDropTarget(null);
     },
     onDragOver: (e: DragEvent) => {
       if (!entry.is_dir || !e.dataTransfer.types.includes(MOVE_MIME)) return;
@@ -2288,11 +2344,12 @@ function moveDragProps(
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = "move";
-      if (actions.dropTarget !== entry.path) actions.setDropTarget(entry.path);
+      if (ctx.actions.current.dropTarget !== entry.path)
+        ctx.actions.current.setDropTarget(entry.path);
     },
     onDragLeave: () => {
-      if (entry.is_dir && actions.dropTarget === entry.path)
-        actions.setDropTarget(null);
+      if (entry.is_dir && ctx.actions.current.dropTarget === entry.path)
+        ctx.actions.current.setDropTarget(null);
     },
     onDrop: (e: DragEvent) => {
       if (!entry.is_dir) return;
@@ -2300,6 +2357,7 @@ function moveDragProps(
       if (!raw) return;
       e.preventDefault();
       e.stopPropagation();
+      const actions = ctx.actions.current;
       actions.setDropTarget(null);
       try {
         actions.moveInto(entry.path, entry.name, JSON.parse(raw) as string[]);
@@ -2526,204 +2584,257 @@ function Breadcrumb({
   );
 }
 
-function EntryMenu({
+function EntryMenuContent({
   entry,
-  actions,
-  children,
+  ctx,
 }: {
   entry: Entry;
-  actions: EntryActions;
-  children: ReactNode;
+  ctx: RowContext;
 }) {
-  const p = entryPerms(entry, actions.perms);
+  const p = entryPerms(entry, ctx.perms);
   const share = p.share;
-  const manage = actions.canManageAccess;
+  const manage = ctx.canManageAccess;
   const copy = p.read;
   const cut = p.delete;
-  const paste = actions.canPaste && p.write;
+  const paste = ctx.canPaste && p.write;
   const rename = p.write && p.delete;
   const remove = p.delete;
   const following = useRef(false);
   return (
-    <ContextMenu>
-      <ContextMenuTrigger
-        asChild
-        onContextMenu={(e) => {
-          // Keep the event from also reaching the empty-area menu that wraps the
-          // whole list, so a right-click on a row opens only the entry's menu.
-          e.stopPropagation();
-          actions.contextTarget(entry);
-        }}
-      >
-        {children}
-      </ContextMenuTrigger>
-      <ContextMenuContent
-        className="w-48"
-        onCloseAutoFocus={(e) => {
-          if (!following.current) return;
-          following.current = false;
-          e.preventDefault();
-          actions.completeReveal();
-        }}
-      >
-        {entry.is_dir ? (
-          <ContextMenuItem onSelect={() => actions.open(entry)}>
-            <FolderOpenIcon />
+    <ContextMenuContent
+      className="w-48"
+      onCloseAutoFocus={(e) => {
+        const follow = following.current;
+        following.current = false;
+        e.preventDefault();
+        if (follow) ctx.actions.current.completeReveal();
+        else
+          document
+            .querySelector<HTMLElement>(
+              `[data-entry-path="${CSS.escape(entry.path)}"]`,
+            )
+            ?.focus({ preventScroll: true });
+      }}
+    >
+      {entry.is_dir ? (
+        <ContextMenuItem onSelect={() => ctx.actions.current.open(entry)}>
+          <FolderOpenIcon />
+          Open
+        </ContextMenuItem>
+      ) : (
+        <>
+          <ContextMenuItem onSelect={() => ctx.actions.current.open(entry)}>
+            <EyeIcon />
             Open
           </ContextMenuItem>
-        ) : (
-          <>
-            <ContextMenuItem onSelect={() => actions.open(entry)}>
-              <EyeIcon />
-              Open
-            </ContextMenuItem>
-            <ContextMenuItem onSelect={() => actions.download(entry)}>
-              <DownloadSimpleIcon />
-              Download
-            </ContextMenuItem>
-            <ContextMenuItem onSelect={() => actions.checksum(entry)}>
-              <FingerprintIcon />
-              Copy SHA-256
-            </ContextMenuItem>
-            {entry.name.toLowerCase().endsWith(".zip") && p.write && (
-              <ContextMenuItem onSelect={() => actions.extract(entry)}>
-                <FileZipIcon />
-                Extract here
-              </ContextMenuItem>
-            )}
-          </>
-        )}
-        {entry.ref && (
           <ContextMenuItem
-            onSelect={() => {
-              following.current = true;
-              actions.goToOriginal(entry);
-            }}
+            onSelect={() => ctx.actions.current.download(entry)}
           >
-            <LinkIcon />
-            Go to original
-          </ContextMenuItem>
-        )}
-        {entry.is_dir && p.read && (
-          <ContextMenuItem onSelect={() => actions.downloadZip(entry)}>
             <DownloadSimpleIcon />
-            Download (.zip)
+            Download
           </ContextMenuItem>
-        )}
+          <ContextMenuItem
+            onSelect={() => ctx.actions.current.checksum(entry)}
+          >
+            <FingerprintIcon />
+            Copy SHA-256
+          </ContextMenuItem>
+          {entry.name.toLowerCase().endsWith(".zip") && p.write && (
+            <ContextMenuItem
+              onSelect={() => ctx.actions.current.extract(entry)}
+            >
+              <FileZipIcon />
+              Extract here
+            </ContextMenuItem>
+          )}
+        </>
+      )}
+      {entry.ref && (
+        <ContextMenuItem
+          onSelect={() => {
+            following.current = true;
+            ctx.actions.current.goToOriginal(entry);
+          }}
+        >
+          <LinkIcon />
+          Go to original
+        </ContextMenuItem>
+      )}
+      {entry.is_dir && p.read && (
+        <ContextMenuItem
+          onSelect={() => ctx.actions.current.downloadZip(entry)}
+        >
+          <DownloadSimpleIcon />
+          Download (.zip)
+        </ContextMenuItem>
+      )}
 
-        {(share || manage) && <ContextMenuSeparator />}
-        {share && (
-          <ContextMenuItem onSelect={() => actions.share(entry)}>
-            <ShareNetworkIcon />
-            Share…
-          </ContextMenuItem>
-        )}
-        {manage && (
-          <ContextMenuItem onSelect={() => actions.manageAccess(entry)}>
-            <KeyIcon />
-            Manage access…
-          </ContextMenuItem>
-        )}
+      {(share || manage) && <ContextMenuSeparator />}
+      {share && (
+        <ContextMenuItem onSelect={() => ctx.actions.current.share(entry)}>
+          <ShareNetworkIcon />
+          Share…
+        </ContextMenuItem>
+      )}
+      {manage && (
+        <ContextMenuItem
+          onSelect={() => ctx.actions.current.manageAccess(entry)}
+        >
+          <KeyIcon />
+          Manage access…
+        </ContextMenuItem>
+      )}
 
-        {(copy || cut || paste) && <ContextMenuSeparator />}
-        {copy && (
-          <ContextMenuItem onSelect={() => actions.copy(entry)}>
-            <CopyIcon />
-            Copy
-            <ContextMenuShortcut>⌘C</ContextMenuShortcut>
-          </ContextMenuItem>
-        )}
-        {cut && (
-          <ContextMenuItem onSelect={() => actions.cut(entry)}>
-            <ScissorsIcon />
-            Cut
-            <ContextMenuShortcut>⌘X</ContextMenuShortcut>
-          </ContextMenuItem>
-        )}
-        {paste && (
-          <ContextMenuItem onSelect={() => actions.paste()}>
-            <ClipboardTextIcon />
-            Paste
-            <ContextMenuShortcut>⌘V</ContextMenuShortcut>
-          </ContextMenuItem>
-        )}
-        {paste && actions.canPasteRef && (
-          <ContextMenuItem onSelect={() => actions.pasteRef()}>
-            <LinkIcon />
-            Paste link
-            <ContextMenuShortcut>⌘⇧V</ContextMenuShortcut>
-          </ContextMenuItem>
-        )}
+      {(copy || cut || paste) && <ContextMenuSeparator />}
+      {copy && (
+        <ContextMenuItem onSelect={() => ctx.actions.current.copy(entry)}>
+          <CopyIcon />
+          Copy
+          <ContextMenuShortcut>⌘C</ContextMenuShortcut>
+        </ContextMenuItem>
+      )}
+      {cut && (
+        <ContextMenuItem onSelect={() => ctx.actions.current.cut(entry)}>
+          <ScissorsIcon />
+          Cut
+          <ContextMenuShortcut>⌘X</ContextMenuShortcut>
+        </ContextMenuItem>
+      )}
+      {paste && (
+        <ContextMenuItem onSelect={() => ctx.actions.current.paste()}>
+          <ClipboardTextIcon />
+          Paste
+          <ContextMenuShortcut>⌘V</ContextMenuShortcut>
+        </ContextMenuItem>
+      )}
+      {paste && ctx.canPasteRef && (
+        <ContextMenuItem onSelect={() => ctx.actions.current.pasteRef()}>
+          <LinkIcon />
+          Paste link
+          <ContextMenuShortcut>⌘⇧V</ContextMenuShortcut>
+        </ContextMenuItem>
+      )}
 
-        <ContextMenuSeparator />
-        <ContextMenuSub>
-          <ContextMenuSubTrigger className="gap-2 [&_svg:not([class*='size-'])]:size-4">
-            <PaletteIcon />
-            Color
-            {entry.color && (
+      <ContextMenuSeparator />
+      <ContextMenuSub>
+        <ContextMenuSubTrigger className="gap-2 [&_svg:not([class*='size-'])]:size-4">
+          <PaletteIcon />
+          Color
+          {entry.color && (
+            <span className="grid size-4 shrink-0 place-items-center">
+              <span
+                className="size-2.5 rounded-full ring-1 ring-border"
+                style={{ background: colorHex(entry.color) }}
+                aria-hidden
+              />
+            </span>
+          )}
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="w-44">
+          {Object.entries(COLORS).map(([id, c]) => (
+            <ContextMenuItem
+              key={id}
+              role="menuitemradio"
+              aria-checked={entry.color === id}
+              onSelect={() => ctx.actions.current.setColor(entry, id)}
+            >
               <span className="grid size-4 shrink-0 place-items-center">
                 <span
                   className="size-2.5 rounded-full ring-1 ring-border"
-                  style={{ background: colorHex(entry.color) }}
+                  style={{ background: c.hex }}
                   aria-hidden
                 />
               </span>
-            )}
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-44">
-            {Object.entries(COLORS).map(([id, c]) => (
-              <ContextMenuItem
-                key={id}
-                role="menuitemradio"
-                aria-checked={entry.color === id}
-                onSelect={() => actions.setColor(entry, id)}
-              >
-                <span className="grid size-4 shrink-0 place-items-center">
-                  <span
-                    className="size-2.5 rounded-full ring-1 ring-border"
-                    style={{ background: c.hex }}
-                    aria-hidden
-                  />
-                </span>
-                {c.label}
-                {entry.color === id && <CheckIcon className="ml-auto" />}
-              </ContextMenuItem>
-            ))}
-            <ContextMenuItem
-              role="menuitemradio"
-              aria-checked={!entry.color}
-              onSelect={() => actions.setColor(entry, null)}
-            >
-              <ProhibitIcon />
-              No colour
-              {!entry.color && <CheckIcon className="ml-auto" />}
+              {c.label}
+              {entry.color === id && <CheckIcon className="ml-auto" />}
             </ContextMenuItem>
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-
-        <ContextMenuSeparator />
-        <ContextMenuItem onSelect={() => actions.info(entry)}>
-          <InfoIcon />
-          {entry.is_dir ? "Folder info" : "File info"}
-        </ContextMenuItem>
-        {rename && (
-          <ContextMenuItem onSelect={() => actions.rename(entry)}>
-            <PencilSimpleIcon />
-            Rename
-            <ContextMenuShortcut>F2</ContextMenuShortcut>
-          </ContextMenuItem>
-        )}
-        {remove && (
+          ))}
           <ContextMenuItem
-            variant="destructive"
-            onSelect={() => actions.remove(entry)}
+            role="menuitemradio"
+            aria-checked={!entry.color}
+            onSelect={() => ctx.actions.current.setColor(entry, null)}
           >
-            <TrashIcon />
-            Move to Trash
-            <ContextMenuShortcut>Del</ContextMenuShortcut>
+            <ProhibitIcon />
+            No colour
+            {!entry.color && <CheckIcon className="ml-auto" />}
           </ContextMenuItem>
-        )}
-      </ContextMenuContent>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+
+      <ContextMenuSeparator />
+      <ContextMenuItem onSelect={() => ctx.actions.current.info(entry)}>
+        <InfoIcon />
+        {entry.is_dir ? "Folder info" : "File info"}
+      </ContextMenuItem>
+      {rename && (
+        <ContextMenuItem onSelect={() => ctx.actions.current.rename(entry)}>
+          <PencilSimpleIcon />
+          Rename
+          <ContextMenuShortcut>F2</ContextMenuShortcut>
+        </ContextMenuItem>
+      )}
+      {remove && (
+        <ContextMenuItem
+          variant="destructive"
+          onSelect={() => ctx.actions.current.remove(entry)}
+        >
+          <TrashIcon />
+          Move to Trash
+          <ContextMenuShortcut>Del</ContextMenuShortcut>
+        </ContextMenuItem>
+      )}
+    </ContextMenuContent>
+  );
+}
+
+function ListContextMenu({
+  entries,
+  ctx,
+  children,
+}: {
+  entries: Entry[];
+  ctx: RowContext;
+  children: ReactNode;
+}) {
+  const byPath = useMemo(() => {
+    const map = new Map<string, Entry>();
+    for (const entry of entries) map.set(entry.path, entry);
+    return map;
+  }, [entries]);
+  const [target, setTarget] = useState<Entry | null>(null);
+
+  const onContextMenu = useCallback(
+    (e: MouseEvent) => {
+      const el =
+        e.target instanceof Element
+          ? e.target.closest("[data-entry-path]")
+          : null;
+      const path = el?.getAttribute("data-entry-path");
+      const entry = path ? byPath.get(path) : undefined;
+      if (!entry) {
+        // Stay shut so the empty-area menu can open instead.
+        e.preventDefault();
+        return;
+      }
+      // Stop the empty-area menu opening underneath this one.
+      e.stopPropagation();
+      ctx.actions.current.contextTarget(entry);
+      setTarget(entry);
+    },
+    [byPath, ctx],
+  );
+
+  return (
+    <ContextMenu
+      open={target !== null}
+      onOpenChange={(open) => {
+        if (!open) setTarget(null);
+      }}
+    >
+      <ContextMenuTrigger asChild onContextMenu={onContextMenu}>
+        {children}
+      </ContextMenuTrigger>
+      {target && <EntryMenuContent entry={target} ctx={ctx} />}
     </ContextMenu>
   );
 }
@@ -2732,13 +2843,14 @@ type ListProps = {
   rows: ListItem[];
   sort: { key: SortKey; dir: SortDir };
   onSort: (key: SortKey) => void;
-  actions: EntryActions;
-  // showLocation reveals each entry's folder under its name — used in search
-  // results, which span folders.
-  showLocation: boolean;
+  ctx: RowContext;
+  selection: Set<string>;
+  sharedPaths: Set<string>;
+  cutPaths: Set<string>;
+  dropTarget: string | null;
+  counts: Record<string, ChildCount | null>;
   focusPath: string | null;
   focusSeq: number;
-  focusEntry: (path: string | null) => void;
 };
 
 // One grid template shared by the column header and every row so they line up.
@@ -2758,13 +2870,21 @@ function ListView({
   rows,
   sort,
   onSort,
-  actions,
-  showLocation,
+  ctx,
+  selection,
+  sharedPaths,
+  cutPaths,
+  dropTarget,
+  counts,
   focusPath,
   focusSeq,
-  focusEntry,
 }: ListProps) {
   const viewport = useRef<HTMLDivElement>(null);
+  const entries = useMemo(
+    () =>
+      rows.flatMap((row) => (row.type === "entry" ? [row.entry] : [])),
+    [rows],
+  );
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -2780,7 +2900,7 @@ function ListView({
 
   useEffect(() => {
     if (!focusPath) return;
-    if (actions.renaming) return;
+    if (ctx.renamingPath) return;
     const idx = rows.findIndex(
       (r) => r.type === "entry" && r.entry.path === focusPath,
     );
@@ -2800,7 +2920,14 @@ function ListView({
     };
     id = requestAnimationFrame(() => attempt(10));
     return () => cancelAnimationFrame(id);
-  }, [focusPath, focusSeq, rows, virtualizer, actions.renaming]);
+  }, [
+    focusPath,
+    focusSeq,
+    rows,
+    virtualizer,
+    ctx.renamingPath,
+    ctx.focusEntry,
+  ]);
 
   const move = (step: -1 | 1) => {
     if (!focusPath) return;
@@ -2810,82 +2937,87 @@ function ListView({
     const i = entryRows.findIndex((r) => r.entry.path === focusPath);
     const next = entryRows[i + step];
     if (!next) return;
-    focusEntry(next.entry.path);
+    ctx.focusEntry(next.entry.path);
   };
 
   return (
-    <div
-      ref={viewport}
-      className="min-h-0 flex-1 overflow-auto"
-      onKeyDown={(e) => {
-        if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-        if (e.altKey || e.metaKey || e.ctrlKey) return;
-        e.preventDefault();
-        move(e.key === "ArrowDown" ? 1 : -1);
-      }}
-    >
+    <ListContextMenu entries={entries} ctx={ctx}>
       <div
-        className={`${listGrid} sticky top-0 z-10 border-b bg-background px-4 py-2 text-xs font-medium text-muted-foreground`}
+        ref={viewport}
+        className="min-h-0 flex-1 overflow-auto"
+        onKeyDown={(e) => {
+          if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+          if (e.altKey || e.metaKey || e.ctrlKey) return;
+          e.preventDefault();
+          move(e.key === "ArrowDown" ? 1 : -1);
+        }}
       >
-        <span />
-        <SortHeader
-          label="Name"
-          active={sort.key === "name"}
-          dir={sort.dir}
-          onClick={() => onSort("name")}
-        />
-        <SortHeader
-          label="Size"
-          active={sort.key === "size"}
-          dir={sort.dir}
-          onClick={() => onSort("size")}
-          align="right"
-        />
-        <SortHeader
-          label="Last modified"
-          active={sort.key === "modified"}
-          dir={sort.dir}
-          onClick={() => onSort("modified")}
-          align="right"
-        />
-        <span />
-      </div>
+        <div
+          className={`${listGrid} sticky top-0 z-10 border-b bg-background px-4 py-2 text-xs font-medium text-muted-foreground`}
+        >
+          <span />
+          <SortHeader
+            label="Name"
+            active={sort.key === "name"}
+            dir={sort.dir}
+            onClick={() => onSort("name")}
+          />
+          <SortHeader
+            label="Size"
+            active={sort.key === "size"}
+            dir={sort.dir}
+            onClick={() => onSort("size")}
+            align="right"
+          />
+          <SortHeader
+            label="Last modified"
+            active={sort.key === "modified"}
+            dir={sort.dir}
+            onClick={() => onSort("modified")}
+            align="right"
+          />
+          <span />
+        </div>
 
-      <div
-        className="relative w-full"
-        style={{ height: `${virtualizer.getTotalSize()}px` }}
-      >
-        {virtualizer.getVirtualItems().map((item) => {
-          const row = rows[item.index];
-          if (!row) return null;
-          return (
-            <div
-              key={item.key}
-              className="absolute inset-x-0 top-0"
-              style={{
-                height: `${item.size}px`,
-                transform: `translateY(${item.start}px)`,
-              }}
-            >
-              {row.type === "header" ? (
-                <div className="flex h-full items-center gap-2 bg-muted/40 px-4 text-xs font-medium text-muted-foreground">
-                  {row.label}
-                  <span className="text-muted-foreground/60">{row.count}</span>
-                </div>
-              ) : (
-                <ListRow
-                  entry={row.entry}
-                  actions={actions}
-                  showLocation={showLocation}
-                  focused={focusPath === row.entry.path}
-                  onFocus={() => focusEntry(row.entry.path)}
-                />
-              )}
-            </div>
-          );
-        })}
+        <div
+          className="relative w-full"
+          style={{ height: `${virtualizer.getTotalSize()}px` }}
+        >
+          {virtualizer.getVirtualItems().map((item) => {
+            const row = rows[item.index];
+            if (!row) return null;
+            return (
+              <div
+                key={item.key}
+                className="absolute inset-x-0 top-0"
+                style={{
+                  height: `${item.size}px`,
+                  transform: `translateY(${item.start}px)`,
+                }}
+              >
+                {row.type === "header" ? (
+                  <div className="flex h-full items-center gap-2 bg-muted/40 px-4 text-xs font-medium text-muted-foreground">
+                    {row.label}
+                    <span className="text-muted-foreground/60">{row.count}</span>
+                  </div>
+                ) : (
+                  <ListRow
+                    entry={row.entry}
+                    ctx={ctx}
+                    selected={selection.has(row.entry.path)}
+                    shared={sharedPaths.has(row.entry.path)}
+                    cut={cutPaths.has(row.entry.path)}
+                    isTarget={row.entry.is_dir && dropTarget === row.entry.path}
+                    focused={focusPath === row.entry.path}
+                    childCount={counts[row.entry.path]}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </ListContextMenu>
   );
 }
 
@@ -2927,11 +3059,11 @@ function SortHeader({
  *  "toggle", and the initial value is selected so typing replaces the name. */
 function RenameField({
   entry,
-  actions,
+  ctx,
   className,
 }: {
   entry: Entry;
-  actions: EntryActions;
+  ctx: RowContext;
   className: string;
 }) {
   const [value, setValue] = useState(entry.name);
@@ -2951,172 +3083,175 @@ function RenameField({
         e.currentTarget.select();
       }}
       onChange={(e) => setValue(e.target.value)}
-      onBlur={() => actions.cancelRename()}
+      onBlur={() => ctx.actions.current.cancelRename()}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Enter") {
           e.preventDefault();
-          actions.commitRename(entry, value);
+          ctx.actions.current.commitRename(entry, value);
         } else if (e.key === "Escape") {
           e.preventDefault();
-          actions.cancelRename();
+          ctx.actions.current.cancelRename();
         }
       }}
     />
   );
 }
 
-function ListRow({
+const ListRow = memo(function ListRow({
   entry,
-  actions,
-  showLocation,
+  ctx,
+  selected,
+  shared,
+  cut,
+  isTarget,
   focused,
-  onFocus,
+  childCount,
 }: {
   entry: Entry;
-  actions: EntryActions;
-  showLocation: boolean;
+  ctx: RowContext;
+  selected: boolean;
+  shared: boolean;
+  cut: boolean;
+  isTarget: boolean;
   focused: boolean;
-  onFocus: () => void;
+  childCount: ChildCount | null | undefined;
 }) {
   const { icon: Icon, color } = entryKind(entry);
   const tint = panelClasses(entry.color);
   const swatch = colorHex(entry.color);
-  const selected = actions.isSelected(entry);
-  const shared = actions.isShared(entry);
   const linked = entry.ref != null;
-  const cut = actions.isCut(entry);
-  const { isTarget, ...drag } = moveDragProps(entry, actions, "row");
+  const renaming = ctx.renamingPath === entry.path;
+  const p = entryPerms(entry, ctx.perms);
+  const drag = moveDragProps(entry, ctx, p.delete, renaming, "row");
   return (
-    <EntryMenu entry={entry} actions={actions}>
-      <div
-        role="button"
-        tabIndex={focused ? 0 : -1}
-        aria-selected={selected}
-        data-entry-path={entry.path}
-        className={`group ${listGrid} h-12 cursor-default border-b border-border/60 px-4 select-none focus:ring-2 focus:ring-inset focus:ring-primary ${
-          cut ? CUT_CLASSES : "outline-none"
-        } ${
-          isTarget
-            ? "bg-primary/15 ring-2 ring-inset ring-primary"
-            : selected
-              ? "bg-primary/10"
-              : "hover:bg-accent/60"
-        }`}
-        {...drag}
-        onFocus={onFocus}
-        onClick={(e) => actions.select(entry, intentOf(e))}
-        onDoubleClick={() => actions.open(entry)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") actions.open(entry);
-          else if (e.key === " ") {
-            e.preventDefault();
-            actions.select(entry, "toggle");
-          }
-        }}
-      >
-        {canThumb(entry) ? (
-          <Thumbnail
-            entry={entry}
-            size={64}
-            className={`grid size-6 place-items-center overflow-hidden rounded ${
-              tint ?? "bg-muted"
-            }`}
-          >
-            <Icon className={tint ? "size-5" : `size-5 ${color}`} />
-          </Thumbnail>
-        ) : (
-          <Icon className={`size-5 ${color}`} />
-        )}
+    <div
+      role="button"
+      tabIndex={focused ? 0 : -1}
+      aria-selected={selected}
+      data-entry-path={entry.path}
+      className={`group ${listGrid} h-12 cursor-default border-b border-border/60 px-4 select-none focus:ring-2 focus:ring-inset focus:ring-primary ${
+        cut ? CUT_CLASSES : "outline-none"
+      } ${
+        isTarget
+          ? "bg-primary/15 ring-2 ring-inset ring-primary"
+          : selected
+            ? "bg-primary/10"
+            : "hover:bg-accent/60"
+      }`}
+      {...drag}
+      onFocus={() => ctx.focusEntry(entry.path)}
+      onClick={(e) => ctx.actions.current.select(entry, intentOf(e))}
+      onDoubleClick={() => ctx.actions.current.open(entry)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") ctx.actions.current.open(entry);
+        else if (e.key === " ") {
+          e.preventDefault();
+          ctx.actions.current.select(entry, "toggle");
+        }
+      }}
+    >
+      {canThumb(entry) ? (
+        <Thumbnail
+          entry={entry}
+          size={64}
+          className={`grid size-6 place-items-center overflow-hidden rounded ${
+            tint ?? "bg-muted"
+          }`}
+        >
+          <Icon className={tint ? "size-5" : `size-5 ${color}`} />
+        </Thumbnail>
+      ) : (
+        <Icon className={`size-5 ${color}`} />
+      )}
 
-        <span className="flex min-w-0 flex-col justify-center">
-          <span className="flex min-w-0 items-center gap-1.5">
-            {swatch && (
-              <span
-                className="size-2 shrink-0 rounded-full ring-1 ring-border"
-                style={{ background: swatch }}
-                title={colorLabel(entry.color)}
-                aria-label={colorLabel(entry.color)}
-              />
-            )}
-            {actions.renaming === entry.path ? (
-              <RenameField
-                entry={entry}
-                actions={actions}
-                className="h-7 min-w-0 flex-1 rounded border border-primary bg-background px-2 text-sm outline-none"
-              />
-            ) : (
-              <span className="truncate text-sm" title={displayName(entry)}>
-                {displayName(entry)}
-              </span>
-            )}
-            {shared && (
-              <ShareIcon
-                className="size-3.5 shrink-0 text-muted-foreground"
-                aria-label="Shared"
-              />
-            )}
-            {linked && (
-              <LinkIcon
-                className="size-3.5 shrink-0 text-muted-foreground"
-                aria-label="Reference"
-              />
-            )}
-          </span>
-          {showLocation && (
+      <span className="flex min-w-0 flex-col justify-center">
+        <span className="flex min-w-0 items-center gap-1.5">
+          {swatch && (
             <span
-              className="truncate text-xs text-muted-foreground"
-              title={locationLabel(entry.path)}
-            >
-              {locationLabel(entry.path)}
+              className="size-2 shrink-0 rounded-full ring-1 ring-border"
+              style={{ background: swatch }}
+              title={colorLabel(entry.color)}
+              aria-label={colorLabel(entry.color)}
+            />
+          )}
+          {renaming ? (
+            <RenameField
+              entry={entry}
+              ctx={ctx}
+              className="h-7 min-w-0 flex-1 rounded border border-primary bg-background px-2 text-sm outline-none"
+            />
+          ) : (
+            <span className="truncate text-sm" title={displayName(entry)}>
+              {displayName(entry)}
             </span>
           )}
-        </span>
-
-        <span className="text-right text-xs tabular-nums text-muted-foreground">
-          {entry.is_dir
-            ? childLabel(actions.childCount(entry.path)) || "—"
-            : formatSize(entry.size)}
-        </span>
-
-        <span className="text-right text-xs text-muted-foreground">
-          {formatRelativeTime(entry.mod_time) || "—"}
-        </span>
-
-        <div className="flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          {!entry.is_dir && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              aria-label={`Download ${entry.name}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                actions.download(entry);
-              }}
-            >
-              <DownloadSimpleIcon />
-            </Button>
+          {shared && (
+            <ShareIcon
+              className="size-3.5 shrink-0 text-muted-foreground"
+              aria-label="Shared"
+            />
           )}
-          {entryPerms(entry, actions.perms).delete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-muted-foreground hover:text-destructive"
-              aria-label={`Trash ${entry.name}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                actions.remove(entry);
-              }}
-            >
-              <TrashIcon />
-            </Button>
+          {linked && (
+            <LinkIcon
+              className="size-3.5 shrink-0 text-muted-foreground"
+              aria-label="Reference"
+            />
           )}
-        </div>
+        </span>
+        {ctx.showLocation && (
+          <span
+            className="truncate text-xs text-muted-foreground"
+            title={locationLabel(entry.path)}
+          >
+            {locationLabel(entry.path)}
+          </span>
+        )}
+      </span>
+
+      <span className="text-right text-xs tabular-nums text-muted-foreground">
+        {entry.is_dir
+          ? childLabel(childCount) || "—"
+          : formatSize(entry.size)}
+      </span>
+
+      <span className="text-right text-xs text-muted-foreground">
+        {formatRelativeTime(entry.mod_time) || "—"}
+      </span>
+
+      <div className="flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        {!entry.is_dir && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            aria-label={`Download ${entry.name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              ctx.actions.current.download(entry);
+            }}
+          >
+            <DownloadSimpleIcon />
+          </Button>
+        )}
+        {p.delete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground hover:text-destructive"
+            aria-label={`Trash ${entry.name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              ctx.actions.current.remove(entry);
+            }}
+          >
+            <TrashIcon />
+          </Button>
+        )}
       </div>
-    </EntryMenu>
+    </div>
   );
-}
+});
 
 /**
  * GridView is a tile layout for browsing by eye. It is not virtualised: it
@@ -3124,34 +3259,39 @@ function ListRow({
  */
 function GridView({
   groups,
-  actions,
-  size,
-  showLocation,
+  ctx,
+  selection,
+  sharedPaths,
+  cutPaths,
+  dropTarget,
+  counts,
   focusPath,
   focusSeq,
-  focusEntry,
 }: {
   groups: Group[];
-  actions: EntryActions;
-  size: GridSize;
-  showLocation: boolean;
+  ctx: RowContext;
+  selection: Set<string>;
+  sharedPaths: Set<string>;
+  cutPaths: Set<string>;
+  dropTarget: string | null;
+  counts: Record<string, ChildCount | null>;
   focusPath: string | null;
   focusSeq: number;
-  focusEntry: (path: string | null) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const entries = useMemo(() => groups.flatMap((g) => g.entries), [groups]);
 
   useEffect(() => {
     if (!focusPath) return;
     // As in the list: an inline rename holds the focus; refocusing the row
     // would blur the input and cancel the edit.
-    if (actions.renaming) return;
+    if (ctx.renamingPath) return;
     const el = root.current?.querySelector<HTMLElement>(
       `[data-entry-path="${CSS.escape(focusPath)}"]`,
     );
     el?.focus({ preventScroll: true });
     el?.scrollIntoView({ block: "nearest" });
-  }, [focusPath, focusSeq, actions.renaming]);
+  }, [focusPath, focusSeq, ctx.renamingPath]);
 
   const move = (key: "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight") => {
     const container = root.current;
@@ -3186,181 +3326,188 @@ function GridView({
       const score = along + across * 3;
       if (!best || score < best.score) best = { el, score };
     }
-    if (best) focusEntry(best.el.getAttribute("data-entry-path"));
+    if (best) ctx.focusEntry(best.el.getAttribute("data-entry-path"));
   };
 
   return (
-    <div
-      ref={root}
-      className="min-h-0 flex-1 overflow-auto p-4"
-      onKeyDown={(e) => {
-        if (!(
-          e.key === "ArrowUp" ||
-          e.key === "ArrowDown" ||
-          e.key === "ArrowLeft" ||
-          e.key === "ArrowRight"
-        ))
-          return;
-        if (e.altKey || e.metaKey || e.ctrlKey) return;
-        e.preventDefault();
-        move(e.key);
-      }}
-    >
-      {groups.map((g) => (
-        <section key={g.key} className="mb-4">
-          {g.label && (
-            <h3 className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              {g.label}
-              <span className="text-muted-foreground/60">
-                {g.entries.length}
-              </span>
-            </h3>
-          )}
-          <div
-            className="grid gap-3"
-            style={{
-              gridTemplateColumns: `repeat(auto-fill, minmax(${size.min}, 1fr))`,
-            }}
-          >
-            {g.entries.map((entry) => (
-              <GridTile
-                key={entry.path}
-                entry={entry}
-                actions={actions}
-                size={size}
-                showLocation={showLocation}
-                focused={focusPath === entry.path}
-                onFocus={() => focusEntry(entry.path)}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
+    <ListContextMenu entries={entries} ctx={ctx}>
+      <div
+        ref={root}
+        className="min-h-0 flex-1 overflow-auto p-4"
+        onKeyDown={(e) => {
+          if (!(
+            e.key === "ArrowUp" ||
+            e.key === "ArrowDown" ||
+            e.key === "ArrowLeft" ||
+            e.key === "ArrowRight"
+          ))
+            return;
+          if (e.altKey || e.metaKey || e.ctrlKey) return;
+          e.preventDefault();
+          move(e.key);
+        }}
+      >
+        {groups.map((g) => (
+          <section key={g.key} className="mb-4">
+            {g.label && (
+              <h3 className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                {g.label}
+                <span className="text-muted-foreground/60">
+                  {g.entries.length}
+                </span>
+              </h3>
+            )}
+            <div
+              className="grid gap-3"
+              style={{
+                gridTemplateColumns: `repeat(auto-fill, minmax(${ctx.tileSize.min}, 1fr))`,
+              }}
+            >
+              {g.entries.map((entry) => (
+                <GridTile
+                  key={entry.path}
+                  entry={entry}
+                  ctx={ctx}
+                  selected={selection.has(entry.path)}
+                  shared={sharedPaths.has(entry.path)}
+                  cut={cutPaths.has(entry.path)}
+                  isTarget={entry.is_dir && dropTarget === entry.path}
+                  focused={focusPath === entry.path}
+                  childCount={counts[entry.path]}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </ListContextMenu>
   );
 }
 
-function GridTile({
+const GridTile = memo(function GridTile({
   entry,
-  actions,
-  size,
-  showLocation,
+  ctx,
+  selected,
+  shared,
+  cut,
+  isTarget,
   focused,
-  onFocus,
+  childCount,
 }: {
   entry: Entry;
-  actions: EntryActions;
-  size: GridSize;
-  showLocation: boolean;
+  ctx: RowContext;
+  selected: boolean;
+  shared: boolean;
+  cut: boolean;
+  isTarget: boolean;
   focused: boolean;
-  onFocus: () => void;
+  childCount: ChildCount | null | undefined;
 }) {
   const { icon: Icon, color } = entryKind(entry);
   const tint = panelClasses(entry.color);
   const frameTint = frameClasses(entry.color);
-  const selected = actions.isSelected(entry);
-  const shared = actions.isShared(entry);
   const linked = entry.ref != null;
-  const cut = actions.isCut(entry);
-  const { isTarget, ...drag } = moveDragProps(entry, actions);
+  const renaming = ctx.renamingPath === entry.path;
+  const p = entryPerms(entry, ctx.perms);
+  const drag = moveDragProps(entry, ctx, p.delete, renaming);
   return (
-    <EntryMenu entry={entry} actions={actions}>
-      <div
-        role="button"
-        tabIndex={focused ? 0 : -1}
-        aria-selected={selected}
-        data-entry-path={entry.path}
-        className={`flex cursor-default flex-col gap-2 rounded-lg border p-2 text-center select-none focus:ring-2 focus:ring-primary ${
-          cut ? CUT_CLASSES : "outline-none"
-        } ${
-          isTarget
-            ? "border-primary bg-primary/15 ring-2 ring-primary"
-            : selected
-              ? "border-primary/40 bg-primary/10"
-              : "border-transparent hover:border-border hover:bg-accent/60"
+    <div
+      role="button"
+      tabIndex={focused ? 0 : -1}
+      aria-selected={selected}
+      data-entry-path={entry.path}
+      className={`flex cursor-default flex-col gap-2 rounded-lg border p-2 text-center select-none focus:ring-2 focus:ring-primary ${cut ? CUT_CLASSES : "outline-none"
+        } ${isTarget
+          ? "border-primary bg-primary/15 ring-2 ring-primary"
+          : selected
+            ? "border-primary/40 bg-primary/10"
+            : "border-transparent hover:border-border hover:bg-accent/60"
         }`}
-        {...drag}
-        onFocus={onFocus}
-        onClick={(e) => actions.select(entry, intentOf(e))}
-        onDoubleClick={() => actions.open(entry)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") actions.open(entry);
-          else if (e.key === " ") {
-            e.preventDefault();
-            actions.select(entry, "toggle");
-          }
-        }}
-      >
-        <div className="relative">
-          {canThumb(entry) ? (
-            <Thumbnail
-              entry={entry}
-              className={`grid aspect-square w-full place-items-center overflow-hidden rounded-md bg-muted/60 ${
-                frameTint ?? ""
+      {...drag}
+      onFocus={() => ctx.focusEntry(entry.path)}
+      onClick={(e) => ctx.actions.current.select(entry, intentOf(e))}
+      onDoubleClick={() => ctx.actions.current.open(entry)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") ctx.actions.current.open(entry);
+        else if (e.key === " ") {
+          e.preventDefault();
+          ctx.actions.current.select(entry, "toggle");
+        }
+      }}
+    >
+      <div className="relative">
+        {canThumb(entry) ? (
+          <Thumbnail
+            entry={entry}
+            className={`grid aspect-square w-full place-items-center overflow-hidden rounded-md bg-muted/60 ${frameTint ?? ""
               }`}
-            >
-              <Icon className={`${size.icon} ${color}`} />
-            </Thumbnail>
-          ) : (
-            <div
-              className={`grid aspect-square w-full place-items-center rounded-md ${
-                tint ?? "bg-muted/60"
+          >
+            <Icon className={`${ctx.tileSize.icon} ${color}`} />
+          </Thumbnail>
+        ) : (
+          <div
+            className={`grid aspect-square w-full place-items-center rounded-md ${tint ?? "bg-muted/60"
               }`}
-            >
-              <Icon className={tint ? size.icon : `${size.icon} ${color}`} />
-            </div>
-          )}
-          {shared && (
-            <span
-              className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-background/85 text-primary shadow-sm backdrop-blur-sm"
-              title="Shared"
-            >
-              <ShareIcon className="size-3.5" />
-            </span>
-          )}
-          {linked && (
-            <span
-              className="absolute left-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-background/85 text-primary shadow-sm backdrop-blur-sm"
-              title={`Reference to ${entry.ref}`}
-            >
-              <LinkIcon className="size-3.5" />
-            </span>
-          )}
-        </div>
-        <div className="min-w-0 px-1">
-          {actions.renaming === entry.path ? (
-            <RenameField
-              entry={entry}
-              actions={actions}
-              className="h-8 w-full rounded border border-primary bg-background px-2 text-center text-sm outline-none"
+          >
+            <Icon
+              className={
+                tint
+                  ? ctx.tileSize.icon
+                  : `${ctx.tileSize.icon} ${color}`
+              }
             />
-          ) : (
-            <p
-              className={`line-clamp-2 wrap-anywhere text-sm inline-block px-2 max-w-full rounded-md ${tint ?? "bg-none"}`}
-              title={displayName(entry)}
-            >
-              {shortName(displayName(entry))}
-            </p>
-          )}
-          {showLocation ? (
-            <p
-              className="truncate text-xs text-muted-foreground"
-              title={locationLabel(entry.path)}
-            >
-              {locationLabel(entry.path)}
-            </p>
-          ) : (
-            <p className="truncate text-xs tabular-nums text-muted-foreground">
-              {entry.is_dir
-                ? childLabel(actions.childCount(entry.path))
-                : formatSize(entry.size)}
-            </p>
-          )}
-        </div>
+          </div>
+        )}
+        {shared && (
+          <span
+            className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-background/85 text-primary shadow-sm backdrop-blur-sm"
+            title="Shared"
+          >
+            <ShareIcon className="size-3.5" />
+          </span>
+        )}
+        {linked && (
+          <span
+            className="absolute left-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-background/85 text-primary shadow-sm backdrop-blur-sm"
+            title={`Reference to ${entry.ref}`}
+          >
+            <LinkIcon className="size-3.5" />
+          </span>
+        )}
       </div>
-    </EntryMenu>
+      <div className="min-w-0 px-1">
+        {renaming ? (
+          <RenameField
+            entry={entry}
+            ctx={ctx}
+            className="h-8 w-full rounded border border-primary bg-background px-2 text-center text-sm outline-none"
+          />
+        ) : (
+          <p
+            className={`line-clamp-2 wrap-anywhere text-sm inline-block px-2 max-w-full rounded-md ${tint ?? "bg-none"}`}
+            title={displayName(entry)}
+          >
+            {shortName(displayName(entry))}
+          </p>
+        )}
+        {ctx.showLocation ? (
+          <p
+            className="truncate text-xs text-muted-foreground"
+            title={locationLabel(entry.path)}
+          >
+            {locationLabel(entry.path)}
+          </p>
+        ) : (
+          <p className="truncate text-xs tabular-nums text-muted-foreground">
+            {entry.is_dir
+              ? childLabel(childCount)
+              : formatSize(entry.size)}
+          </p>
+        )}
+      </div>
+    </div>
   );
-}
+});
 
 /**
  * NameDialog collects a single name for creating a folder or renaming an entry.
@@ -3636,16 +3783,15 @@ function JobsPanel({
  * not an event — it outlives navigation.
  */
 function Transfers({
-  transfers,
   onClear,
   onCancel,
   onCancelTransfer,
 }: {
-  transfers: UploadProgress[];
   onClear: () => void;
   onCancel: () => void;
   onCancelTransfer: (id: string) => void;
 }) {
+  const transfers = useTransfers();
   if (transfers.length === 0) return null;
   const remaining = transfers.filter(
     (t) => t.status === "uploading" || t.status === "queued",
