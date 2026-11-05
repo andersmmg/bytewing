@@ -1506,8 +1506,10 @@ export function Browser({
                   j.bytesDone === fresh.bytes_done &&
                   j.bytesTotal === fresh.bytes_total &&
                   speed === j.speed
-                )
+                ) {
+                  j.sampledAt = now;
                   return j;
+                }
                 changed = true;
                 return {
                   ...j,
