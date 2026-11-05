@@ -450,7 +450,14 @@ export function Browser({
   const lastRefreshAt = useRef(Date.now());
   const revealRef = useRef<{ dir: string; path: string } | null>(null);
 
-  useEffect(() => () => clearTransfers(), []);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      clearTransfers();
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(
@@ -701,6 +708,7 @@ export function Browser({
   const runUpload = useCallback(
     async (items: { file: File; name: string }[], target: string) => {
       if (items.length === 0) return;
+      if (!mounted.current) return;
       const queued = items.map(({ file, name }) => {
         const id = crypto.randomUUID();
         const controller = new AbortController();
