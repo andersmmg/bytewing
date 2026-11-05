@@ -478,13 +478,21 @@ export function Browser({
   }, [focusPath]);
 
   const selectionRef = useRef(selection);
-  selectionRef.current = selection;
+  useEffect(() => {
+    selectionRef.current = selection;
+  }, [selection]);
 
+  /**
+   * selectBox applies a box-selection frame, ignoring frames that repeat the
+   * selection it already holds.
+   */
   const selectBox = useCallback((paths: string[]) => {
     const cur = selectionRef.current;
     if (cur.size === paths.length && paths.every((path) => cur.has(path)))
       return;
-    setSelection(new Set(paths));
+    const next = new Set(paths);
+    selectionRef.current = next;
+    setSelection(next);
     setAnchor(paths.length > 0 ? paths[paths.length - 1]! : null);
   }, []);
 
@@ -1707,7 +1715,36 @@ export function Browser({
     [clipboard],
   );
 
-  // empty-area create menu depending on whether the caller can write here.
+  // Which menu the browse area is showing
+  const [menuTarget, setMenuTarget] = useState<Entry | null | undefined>(
+    undefined,
+  );
+  const entriesByPath = useMemo(() => {
+    const map = new Map<string, Entry>();
+    for (const entry of ordered) map.set(entry.path, entry);
+    return map;
+  }, [ordered]);
+
+  /** Resolves the entry a context-menu event landed on, if any. */
+  const onBrowseContextMenu = useCallback(
+    (e: MouseEvent) => {
+      const el =
+        e.target instanceof Element
+          ? e.target.closest("[data-entry-path]")
+          : null;
+      const path = el?.getAttribute("data-entry-path");
+      const entry = path ? entriesByPath.get(path) : undefined;
+      if (entry) {
+        actionsRef.current.contextTarget(entry);
+        setMenuTarget(entry);
+        return;
+      }
+      if (canCreateHere) setMenuTarget(null);
+    },
+    [entriesByPath, canCreateHere],
+  );
+
+  // breadcrumb, listing and the box-selection overlay, all under one menu
   const browseArea = (
     <div
       className="flex min-h-0 flex-1 flex-col"
@@ -2040,9 +2077,18 @@ export function Browser({
             </p>
           )}
 
-          {canCreateHere ? (
-            <ContextMenu>
-              <ContextMenuTrigger asChild>{browseArea}</ContextMenuTrigger>
+          <ContextMenu
+            open={menuTarget !== undefined}
+            onOpenChange={(open) => {
+              if (!open) setMenuTarget(undefined);
+            }}
+          >
+            <ContextMenuTrigger asChild onContextMenu={onBrowseContextMenu}>
+              {browseArea}
+            </ContextMenuTrigger>
+            {menuTarget ? (
+              <EntryMenuContent entry={menuTarget} ctx={rowContext} />
+            ) : menuTarget === null ? (
               <ContextMenuContent className="w-52">
                 <CreateContextItems actions={createActions} />
                 {clipboard && (
@@ -2063,10 +2109,8 @@ export function Browser({
                   </>
                 )}
               </ContextMenuContent>
-            </ContextMenu>
-          ) : (
-            browseArea
-          )}
+            ) : null}
+          </ContextMenu>
 
           {dragging && path !== "/members" && (
             <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-primary/10 backdrop-blur-sm">
@@ -2584,6 +2628,7 @@ function Breadcrumb({
   );
 }
 
+/** EntryMenuContent lists the actions available on one entry. */
 function EntryMenuContent({
   entry,
   ctx,
@@ -2787,58 +2832,6 @@ function EntryMenuContent({
   );
 }
 
-function ListContextMenu({
-  entries,
-  ctx,
-  children,
-}: {
-  entries: Entry[];
-  ctx: RowContext;
-  children: ReactNode;
-}) {
-  const byPath = useMemo(() => {
-    const map = new Map<string, Entry>();
-    for (const entry of entries) map.set(entry.path, entry);
-    return map;
-  }, [entries]);
-  const [target, setTarget] = useState<Entry | null>(null);
-
-  const onContextMenu = useCallback(
-    (e: MouseEvent) => {
-      const el =
-        e.target instanceof Element
-          ? e.target.closest("[data-entry-path]")
-          : null;
-      const path = el?.getAttribute("data-entry-path");
-      const entry = path ? byPath.get(path) : undefined;
-      if (!entry) {
-        // Stay shut so the empty-area menu can open instead.
-        e.preventDefault();
-        return;
-      }
-      // Stop the empty-area menu opening underneath this one.
-      e.stopPropagation();
-      ctx.actions.current.contextTarget(entry);
-      setTarget(entry);
-    },
-    [byPath, ctx],
-  );
-
-  return (
-    <ContextMenu
-      open={target !== null}
-      onOpenChange={(open) => {
-        if (!open) setTarget(null);
-      }}
-    >
-      <ContextMenuTrigger asChild onContextMenu={onContextMenu}>
-        {children}
-      </ContextMenuTrigger>
-      {target && <EntryMenuContent entry={target} ctx={ctx} />}
-    </ContextMenu>
-  );
-}
-
 type ListProps = {
   rows: ListItem[];
   sort: { key: SortKey; dir: SortDir };
@@ -2880,11 +2873,6 @@ function ListView({
   focusSeq,
 }: ListProps) {
   const viewport = useRef<HTMLDivElement>(null);
-  const entries = useMemo(
-    () =>
-      rows.flatMap((row) => (row.type === "entry" ? [row.entry] : [])),
-    [rows],
-  );
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -2941,83 +2929,81 @@ function ListView({
   };
 
   return (
-    <ListContextMenu entries={entries} ctx={ctx}>
+    <div
+      ref={viewport}
+      className="min-h-0 flex-1 overflow-auto"
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+        if (e.altKey || e.metaKey || e.ctrlKey) return;
+        e.preventDefault();
+        move(e.key === "ArrowDown" ? 1 : -1);
+      }}
+    >
       <div
-        ref={viewport}
-        className="min-h-0 flex-1 overflow-auto"
-        onKeyDown={(e) => {
-          if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-          if (e.altKey || e.metaKey || e.ctrlKey) return;
-          e.preventDefault();
-          move(e.key === "ArrowDown" ? 1 : -1);
-        }}
+        className={`${listGrid} sticky top-0 z-10 border-b bg-background px-4 py-2 text-xs font-medium text-muted-foreground`}
       >
-        <div
-          className={`${listGrid} sticky top-0 z-10 border-b bg-background px-4 py-2 text-xs font-medium text-muted-foreground`}
-        >
-          <span />
-          <SortHeader
-            label="Name"
-            active={sort.key === "name"}
-            dir={sort.dir}
-            onClick={() => onSort("name")}
-          />
-          <SortHeader
-            label="Size"
-            active={sort.key === "size"}
-            dir={sort.dir}
-            onClick={() => onSort("size")}
-            align="right"
-          />
-          <SortHeader
-            label="Last modified"
-            active={sort.key === "modified"}
-            dir={sort.dir}
-            onClick={() => onSort("modified")}
-            align="right"
-          />
-          <span />
-        </div>
-
-        <div
-          className="relative w-full"
-          style={{ height: `${virtualizer.getTotalSize()}px` }}
-        >
-          {virtualizer.getVirtualItems().map((item) => {
-            const row = rows[item.index];
-            if (!row) return null;
-            return (
-              <div
-                key={item.key}
-                className="absolute inset-x-0 top-0"
-                style={{
-                  height: `${item.size}px`,
-                  transform: `translateY(${item.start}px)`,
-                }}
-              >
-                {row.type === "header" ? (
-                  <div className="flex h-full items-center gap-2 bg-muted/40 px-4 text-xs font-medium text-muted-foreground">
-                    {row.label}
-                    <span className="text-muted-foreground/60">{row.count}</span>
-                  </div>
-                ) : (
-                  <ListRow
-                    entry={row.entry}
-                    ctx={ctx}
-                    selected={selection.has(row.entry.path)}
-                    shared={sharedPaths.has(row.entry.path)}
-                    cut={cutPaths.has(row.entry.path)}
-                    isTarget={row.entry.is_dir && dropTarget === row.entry.path}
-                    focused={focusPath === row.entry.path}
-                    childCount={counts[row.entry.path]}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <span />
+        <SortHeader
+          label="Name"
+          active={sort.key === "name"}
+          dir={sort.dir}
+          onClick={() => onSort("name")}
+        />
+        <SortHeader
+          label="Size"
+          active={sort.key === "size"}
+          dir={sort.dir}
+          onClick={() => onSort("size")}
+          align="right"
+        />
+        <SortHeader
+          label="Last modified"
+          active={sort.key === "modified"}
+          dir={sort.dir}
+          onClick={() => onSort("modified")}
+          align="right"
+        />
+        <span />
       </div>
-    </ListContextMenu>
+
+      <div
+        className="relative w-full"
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
+        {virtualizer.getVirtualItems().map((item) => {
+          const row = rows[item.index];
+          if (!row) return null;
+          return (
+            <div
+              key={item.key}
+              className="absolute inset-x-0 top-0"
+              style={{
+                height: `${item.size}px`,
+                transform: `translateY(${item.start}px)`,
+              }}
+            >
+              {row.type === "header" ? (
+                <div className="flex h-full items-center gap-2 bg-muted/40 px-4 text-xs font-medium text-muted-foreground">
+                  {row.label}
+                  <span className="text-muted-foreground/60">{row.count}</span>
+                </div>
+              ) : (
+                <ListRow
+                  entry={row.entry}
+                  ctx={ctx}
+                  selected={selection.has(row.entry.path)}
+                  shared={sharedPaths.has(row.entry.path)}
+                  cut={cutPaths.has(row.entry.path)}
+                  isTarget={row.entry.is_dir && dropTarget === row.entry.path}
+                  focused={focusPath === row.entry.path}
+                  childCount={counts[row.entry.path]}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -3279,7 +3265,6 @@ function GridView({
   focusSeq: number;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const entries = useMemo(() => groups.flatMap((g) => g.entries), [groups]);
 
   useEffect(() => {
     if (!focusPath) return;
@@ -3330,57 +3315,55 @@ function GridView({
   };
 
   return (
-    <ListContextMenu entries={entries} ctx={ctx}>
-      <div
-        ref={root}
-        className="min-h-0 flex-1 overflow-auto p-4"
-        onKeyDown={(e) => {
-          if (!(
-            e.key === "ArrowUp" ||
-            e.key === "ArrowDown" ||
-            e.key === "ArrowLeft" ||
-            e.key === "ArrowRight"
-          ))
-            return;
-          if (e.altKey || e.metaKey || e.ctrlKey) return;
-          e.preventDefault();
-          move(e.key);
-        }}
-      >
-        {groups.map((g) => (
-          <section key={g.key} className="mb-4">
-            {g.label && (
-              <h3 className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                {g.label}
-                <span className="text-muted-foreground/60">
-                  {g.entries.length}
-                </span>
-              </h3>
-            )}
-            <div
-              className="grid gap-3"
-              style={{
-                gridTemplateColumns: `repeat(auto-fill, minmax(${ctx.tileSize.min}, 1fr))`,
-              }}
-            >
-              {g.entries.map((entry) => (
-                <GridTile
-                  key={entry.path}
-                  entry={entry}
-                  ctx={ctx}
-                  selected={selection.has(entry.path)}
-                  shared={sharedPaths.has(entry.path)}
-                  cut={cutPaths.has(entry.path)}
-                  isTarget={entry.is_dir && dropTarget === entry.path}
-                  focused={focusPath === entry.path}
-                  childCount={counts[entry.path]}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-    </ListContextMenu>
+    <div
+      ref={root}
+      className="min-h-0 flex-1 overflow-auto p-4"
+      onKeyDown={(e) => {
+        if (!(
+          e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight"
+        ))
+          return;
+        if (e.altKey || e.metaKey || e.ctrlKey) return;
+        e.preventDefault();
+        move(e.key);
+      }}
+    >
+      {groups.map((g) => (
+        <section key={g.key} className="mb-4">
+          {g.label && (
+            <h3 className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              {g.label}
+              <span className="text-muted-foreground/60">
+                {g.entries.length}
+              </span>
+            </h3>
+          )}
+          <div
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: `repeat(auto-fill, minmax(${ctx.tileSize.min}, 1fr))`,
+            }}
+          >
+            {g.entries.map((entry) => (
+              <GridTile
+                key={entry.path}
+                entry={entry}
+                ctx={ctx}
+                selected={selection.has(entry.path)}
+                shared={sharedPaths.has(entry.path)}
+                cut={cutPaths.has(entry.path)}
+                isTarget={entry.is_dir && dropTarget === entry.path}
+                focused={focusPath === entry.path}
+                childCount={counts[entry.path]}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }
 

@@ -44,6 +44,7 @@ export type BoxSelect = {
   click: (then: () => void) => void
 }
 
+/** measures every entry row in the container, in screen space */
 function measure(container: HTMLElement): Target[] {
   const out: Target[] = []
   for (const el of container.querySelectorAll('[data-entry-path]')) {
@@ -55,6 +56,7 @@ function measure(container: HTMLElement): Target[] {
   return out
 }
 
+/** the container's own rect, used to clip the painted box */
 function areaOf(container: HTMLElement): Box {
   const r = container.getBoundingClientRect()
   return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
@@ -66,6 +68,7 @@ function recapture(d: Drag) {
   d.targets = measure(d.container)
 }
 
+/** returns the paths of every target the box overlap */
 function touched(targets: Target[], box: Box): string[] {
   const out: string[] = []
   for (const t of targets) {
@@ -75,6 +78,9 @@ function touched(targets: Target[], box: Box): string[] {
   return out
 }
 
+/**
+ * useBoxSelect drags a selection box over `[data-entry-path]` rows.
+ */
 export function useBoxSelect({ snapshot, apply, overlay }: Options): BoxSelect {
   const opts = useRef({ snapshot, apply })
   opts.current = { snapshot, apply }
@@ -82,6 +88,7 @@ export function useBoxSelect({ snapshot, apply, overlay }: Options): BoxSelect {
   const drag = useRef<Drag | null>(null)
   const swallowUntil = useRef(0)
 
+  /** draws the box and applies the selection it covers */
   const paint = useCallback((d: Drag) => {
     const box: Box = {
       left: Math.min(d.startX, d.x),
@@ -111,6 +118,7 @@ export function useBoxSelect({ snapshot, apply, overlay }: Options): BoxSelect {
     opts.current.apply([...d.base, ...touched(d.targets, box)])
   }, [overlay])
 
+  /** tracks the pointer, coalescing paints into one animation frame */
   const move = useCallback(
     (e: globalThis.MouseEvent) => {
       const d = drag.current
@@ -129,11 +137,13 @@ export function useBoxSelect({ snapshot, apply, overlay }: Options): BoxSelect {
     [paint],
   )
 
+  /** re-measures when the page scrolls or resizes mid-drag */
   const scroll = useCallback(() => {
     const d = drag.current
     if (d) recapture(d)
   }, [])
 
+  /** tears the drag down and commits the final selection */
   const end = useCallback(() => {
     const d = drag.current
     if (!d) return
@@ -146,12 +156,14 @@ export function useBoxSelect({ snapshot, apply, overlay }: Options): BoxSelect {
     d.frame = 0
     drag.current = null
     if (!d.active) return
+    recapture(d)
     paint(d)
     const el = overlay.current
     if (el) el.style.opacity = '0'
     swallowUntil.current = Date.now() + SWALLOW_MS
   }, [move, paint, overlay, scroll])
 
+  /** starts a drag, unless the press belongs to a control or a scrollbar */
   const onMouseDown = useCallback(
     (e: ReactMouseEvent) => {
       if (e.button !== 0) return
@@ -189,6 +201,7 @@ export function useBoxSelect({ snapshot, apply, overlay }: Options): BoxSelect {
     [move, end, scroll],
   )
 
+  /** runs a click handler unless that click ended a drag */
   const click = useCallback((then: () => void) => {
     if (Date.now() < swallowUntil.current) {
       swallowUntil.current = 0
